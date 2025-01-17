@@ -7,7 +7,7 @@ s.src = chrome.runtime.getURL("src/inject.js");
 // Add the script to the DOM
 s.onload = function () {
   s.remove();
-  console.log("Script injected! 🚀");
+  console.log("NetSense is Proctoring... 🚀");
 };
 
 // Append the script to the head
@@ -15,7 +15,7 @@ s.onload = function () {
 
 document.addEventListener("netSense", (e: CustomEventInit<NetSense>) => {
   // `detail` is properly typed as `number` here!
-  console.log(e.detail);
+  console.log("NetSense", e.detail);
 
   //send it to the background script
   chrome.runtime.sendMessage(e.detail);
