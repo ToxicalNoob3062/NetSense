@@ -1,0 +1,32 @@
+{
+  "{{chrome}}.manifest_version": 3,
+  "name": "Extension Name",
+  "description": "Some Desc.",
+  "version": "1.1",
+  "icons": {
+    "16": "icon/16.png",
+    "32": "icon/32.png",
+    "48": "icon/48.png",
+    "96": "icon/96.png",
+    "128": "icon/128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "run_at": "document_start",
+      "{{chrome}}.js": ["src/content.ts"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "{{chrome}}.resources": ["src/inject.js"],
+      "matches": ["*://*/*"]
+    }
+  ],
+  "{{chrome}}.action": {
+    "default_popup": "src/popup.html"
+  },
+  "background": {
+    "{{chrome}}.service_worker": "src/background.ts"
+  }
+}
