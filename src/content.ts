@@ -12,3 +12,11 @@ s.onload = function () {
 
 // Append the script to the head
 (document.head || document.documentElement).appendChild(s);
+
+document.addEventListener("netSense", (e: CustomEventInit<NetSense>) => {
+  // `detail` is properly typed as `number` here!
+  console.log(e.detail);
+
+  //send it to the background script
+  chrome.runtime.sendMessage(e.detail);
+});

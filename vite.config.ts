@@ -22,7 +22,4 @@ export default defineConfig({
       additionalInputs: ["src/inject.ts"],
     }),
   ],
-  build: {
-    minify: false,
-  },
 });

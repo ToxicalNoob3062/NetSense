@@ -1,4 +1,3 @@
-// Define the NetSense class
 class NetSense {
   url: string;
   method: string;
@@ -8,6 +7,7 @@ class NetSense {
   resBody: object | string;
   status: number;
   duration: number;
+  type: "XHR" | "FETCH";
 
   constructor() {
     this.url = "";
@@ -18,6 +18,7 @@ class NetSense {
     this.resBody = {};
     this.status = 0;
     this.duration = 0;
+    this.type = "XHR";
   }
 }
 
@@ -29,17 +30,14 @@ function logNetworkRequest(
 ) {
   netSense.duration = new Date().getTime() - startTime;
 
-  let reqType: string;
-
   if (response instanceof XMLHttpRequest) {
     // Process XHR response
-    reqType = "XHR";
     netSense.status = response.status;
     netSense.resHeaders = parseHeaders(response.getAllResponseHeaders());
     netSense.resBody = parseResponseBody(response.response);
   } else {
     // Process fetch response
-    reqType = "FETCH";
+    netSense.type = "FETCH";
     netSense.status = response.status;
     netSense.resHeaders = {};
     response.headers.forEach((value, key) => {
@@ -48,7 +46,8 @@ function logNetworkRequest(
     netSense.resBody = parseResponseBody(response.clone());
   }
 
-  console.log(`${reqType} REQ: `, netSense);
+  //send the data to the background script
+  document.dispatchEvent(new CustomEvent("netSense", { detail: netSense }));
 }
 
 // Parse headers
