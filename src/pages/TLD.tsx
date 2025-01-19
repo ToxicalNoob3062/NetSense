@@ -76,9 +76,9 @@ export default function TLD() {
                     onClick={() => {
                       setRoute(e);
                     }}
-                    className="w-12 mx-auto flex justify-center items-center rounded-md bg-white text-black"
+                    className="w-12 font-bold mx-auto flex justify-center items-center rounded-md bg-white text-black"
                   >
-                    {">"}
+                    {"🎉"}
                   </button>
                 </td>
               </tr>
