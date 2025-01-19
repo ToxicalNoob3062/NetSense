@@ -2,9 +2,11 @@ import React from "react";
 import { useRouter } from "../contexts/routerContext";
 import { Pheader } from "../components/Pheader";
 import { Lform } from "../components/Lform";
+import { useOverlay } from "../contexts/overLayContext";
 
-export default function SUB() {
+export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
   const { route: site } = useRouter();
+  const { setOverlay } = useOverlay();
   const sub = ["com", "org", "net", "gov", "edu"];
   const [markings, setMarkings] = React.useState(new Set<string>()); // Use React state
 
@@ -73,7 +75,10 @@ export default function SUB() {
                 <td className="p-2 text-center w-2/12">5</td>
                 <td className="p-2 text-center w-2/12">
                   <button
-                    onClick={() => {}}
+                    onClick={() => {
+                      setOverlay("selection");
+                      setSub(e);
+                    }}
                     className="w-12 mx-auto flex justify-center items-center rounded-md bg-white text-black"
                   >
                     {"👁️‍🗨️"}

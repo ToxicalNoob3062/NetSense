@@ -15,7 +15,7 @@ export default function Overlay({
       {!lock && (
         <button
           onClick={() => setOverlay(null)}
-          className="w-8 h-8 bg-white text-black text-lg font-bold rounded-full flex justify-center items-center absolute top-6 right-6"
+          className="w-8 h-8 bg-white text-black text-lg font-bold rounded-full flex justify-center items-center absolute top-4 right-4"
         >
           x
         </button>
