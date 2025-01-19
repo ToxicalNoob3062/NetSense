@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  width: 675px;
+  height: 465px;
+  font-size: 16px;
+}
+
+/* Custom CSS class to hide scrollbars */
+.hidebars {
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer */
+}
+
+.hidebars::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Edge */
+}

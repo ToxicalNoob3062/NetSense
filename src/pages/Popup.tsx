@@ -1,17 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import TLD from "../pages/TLD";
+import SUB from "../pages/SUB";
+import { useRouter } from "../contexts/routerContext";
 
 export default function () {
+  let [auth, setAuth] = useState(false);
+  const { route, setRoute } = useRouter();
   useEffect(() => {
     console.log("Hello from the popup!");
   }, []);
-
   return (
-    <div className="bg-red-500 min-w-96 min-h-96 p-8">
-      <img src="/icon/32.png" />
-      <h1>vite-plugin-web-extension</h1>
-      <p>
-        Template: <code>react-ts j</code>
-      </p>
+    <div className="w-full bg-e_black border border-e_ash text-white font-sans min-h-screen p-4 flex flex-col">
+      <Header />
+      {route === "tld" ? <TLD /> : <SUB />}
+      <Footer />
     </div>
   );
 }

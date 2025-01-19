@@ -1,9 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import Popup from "./pages/Popup";
+import { RouterProvider } from "./contexts/routerContext";
 
 ReactDOM.createRoot(document.body).render(
   <React.StrictMode>
-    <Popup />
+    <RouterProvider>
+      <Popup />
+    </RouterProvider>
   </React.StrictMode>
 );

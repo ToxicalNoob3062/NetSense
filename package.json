@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "rm -rf ./dist && tsc && vite build",
+    "w-build": "nodemon",
     "watch": "concurrently \"bun dev\" \"nodemon\""
   },
   "dependencies": {
