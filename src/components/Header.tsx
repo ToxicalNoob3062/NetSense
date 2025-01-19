@@ -19,7 +19,12 @@ export default function Header() {
         <img src="/icon/32.png" />
         <h1 className="text-2xl tracking-wide font-medium">NetSense</h1>
       </div>
-      <button className="bg-white text-black w-20 h-10 flex justify-center items-center rounded-md text-md">
+      <button
+        onClick={() => {
+          setRoute("scripts");
+        }}
+        className="bg-white text-black w-20 h-10 flex justify-center items-center rounded-md text-md"
+      >
         Scripts
       </button>
     </header>
