@@ -22,7 +22,7 @@ export default function Selection({ url }: { url: string }) {
     });
   };
   return (
-    <div className="w-[35rem] h-[30rem]  p-8 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-4">
+    <div className="w-[32rem] h-[25rem]  p-4 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-4">
       <h1 className="mx-auto text-xl mb-4">{url + " " + "(7" + "scripts)"}</h1>
       <div className="flex gap-6">
         <input
