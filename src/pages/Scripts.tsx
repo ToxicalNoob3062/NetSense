@@ -2,9 +2,15 @@ import React from "react";
 import { useRouter } from "../contexts/routerContext";
 import { Pheader } from "../components/Pheader";
 import { Lform } from "../components/Lform";
+import { useOverlay } from "../contexts/overLayContext";
+import { set } from "mongoose";
 
-export default function Scripts() {
-  const { setRoute } = useRouter();
+export default function Scripts({
+  setScript,
+}: {
+  setScript: (s: string) => void;
+}) {
+  const { setOverlay } = useOverlay();
   const scripts = ["com", "org", "net", "gov", "edu"];
   const [markings, setMarkings] = React.useState(new Set<string>()); // Use React state
 
@@ -73,7 +79,10 @@ export default function Scripts() {
                 <td className="p-2 text-center w-2/12">5kb</td>
                 <td className="p-2 text-center w-2/12">
                   <button
-                    onClick={() => {}}
+                    onClick={() => {
+                      setOverlay("editor");
+                      setScript(e);
+                    }}
                     className="w-12 mx-auto flex justify-center items-center rounded-md bg-white text-black"
                   >
                     {"🧠"}
