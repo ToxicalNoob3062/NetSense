@@ -1,143 +1,160 @@
-import { PGlite, Results } from "@electric-sql/pglite";
-import { readFile } from "fs/promises"; // Import fs module to read local files
+import { openDB, IDBPDatabase, DBSchema, IDBPObjectStore } from "idb";
 
-// CREATE TABLE IF NOT EXISTS scripts (
-//   name TEXT PRIMARY KEY,
-//   created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   content TEXT NOT NULL
-// );
+// Use fake-indexeddb in Node.js environment
+if (typeof indexedDB === "undefined") {
+  const {
+    indexedDB,
+    IDBKeyRange,
+    IDBRequest,
+    IDBTransaction,
+    IDBCursor,
+    IDBDatabase,
+    IDBObjectStore,
+    IDBIndex,
+  } = require("fake-indexeddb");
+  global.indexedDB = indexedDB;
+  global.IDBKeyRange = IDBKeyRange;
+  global.IDBRequest = IDBRequest;
+  global.IDBTransaction = IDBTransaction;
+  global.IDBCursor = IDBCursor;
+  global.IDBDatabase = IDBDatabase;
+  global.IDBObjectStore = IDBObjectStore;
+  global.IDBIndex = IDBIndex;
+}
 
-// CREATE TABLE IF NOT EXISTS tld_links (
-//   website TEXT PRIMARY KEY,
-//   created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-// );
+export type TopLink = {
+  website: string;
+  created: Date;
+  sublinks: string[];
+};
 
-// CREATE TABLE IF NOT EXISTS sublinks (
-//   tld_website TEXT NOT NULL,
-//   url TEXT NOT NULL,
-//   created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   logging BOOLEAN DEFAULT FALSE,
-//   PRIMARY KEY (tld_website, url),
-//   FOREIGN KEY (tld_website) REFERENCES tld_links(website)
-// );
+export type Sublink = {
+  composite: string;
+  url: string;
+  created: Date;
+  logging: boolean;
+  scripts: string[];
+};
 
-// CREATE TABLE IF NOT EXISTS sublink_scripts (
-//   tld_website TEXT NOT NULL,
-//   sublink_url TEXT NOT NULL,
-//   script_name TEXT NOT NULL,
-//   FOREIGN KEY (tld_website, sublink_url) REFERENCES sublinks(tld_website, url),
-//   FOREIGN KEY (script_name) REFERENCES scripts(name),
-//   PRIMARY KEY (tld_website, sublink_url, script_name)
-// );
+export type Script = {
+  created: Date;
+  name: string;
+  content: string;
+};
+
+interface DatabaseSchema extends DBSchema {
+  toplinks: {
+    key: string;
+    value: TopLink;
+  };
+  sublinks: {
+    key: string;
+    value: Sublink;
+  };
+  scripts: {
+    key: string;
+    value: Script;
+  };
+}
 
 export class Database {
-  db: PGlite;
-  initialized: Promise<void>;
+  dbPromise: Promise<IDBPDatabase<DatabaseSchema>>;
 
-  constructor(database: string) {
-    this.db = new PGlite(database);
-    this.initialized = this.initialize();
-  }
-
-  private async getSQL(file: string) {
-    const schema = await readFile(file, "utf-8");
-    const sqlStatements = schema
-      .split(";")
-      .map((stmt) => stmt.trim())
-      .filter((stmt) => stmt.length > 0);
-
-    return sqlStatements;
-  }
-
-  public async performTransaction(sqlStatements: string[]) {
-    await this.db.transaction(async (tx) => {
-      for (const statement of sqlStatements) {
-        console.log("Executing statement:", statement);
-        await tx.query(statement);
-      }
+  constructor(name: string) {
+    this.dbPromise = openDB<DatabaseSchema>(name, 1, {
+      upgrade(db) {
+        db.createObjectStore("toplinks", {
+          keyPath: "website",
+          autoIncrement: false,
+        });
+        db.createObjectStore("sublinks", {
+          keyPath: "composite",
+          autoIncrement: false,
+        });
+        db.createObjectStore("scripts", {
+          keyPath: "name",
+          autoIncrement: false,
+        });
+      },
     });
   }
 
-  private async initialize() {
-    // Check if the base table 'scripts' exists in public schema from pgtable
-    const checkTable = (await this.db.query(
-      `SELECT EXISTS (
-        SELECT 1
-        FROM pg_catalog.pg_tables
-        WHERE schemaname = 'public'
-          AND tablename = 'scripts'
+  async query(
+    storeNames: ("toplinks" | "sublinks" | "scripts")[],
+    q: (stores: {
+      [K in "toplinks" | "sublinks" | "scripts"]: IDBPObjectStore<
+        DatabaseSchema,
+        ("toplinks" | "sublinks" | "scripts")[],
+        "toplinks" | "sublinks" | "scripts",
+        "readwrite"
+      >;
+    }) => Promise<any>
+  ) {
+    const db = await this.dbPromise;
+    const tx = db.transaction(storeNames, "readwrite");
+    const stores = storeNames.reduce(
+      (acc, storeName) => {
+        acc[storeName] = tx.objectStore(storeName);
+        return acc;
+      },
+      {} as {
+        [K in "toplinks" | "sublinks" | "scripts"]: IDBPObjectStore<
+          DatabaseSchema,
+          ("toplinks" | "sublinks" | "scripts")[],
+          "toplinks" | "sublinks" | "scripts",
+          "readwrite"
+        >;
+      }
     );
-    `
-    )) as Results<{ exists: boolean }>;
-
-    const exists = checkTable.rows[0].exists;
-
-    if (exists) {
-      console.log("Schema already exists");
-      return;
-    }
-
-    // Perform schema initialization
-    const sqlStatements = await this.getSQL("schema.sql");
-    await this.performTransaction(sqlStatements);
-  }
-
-  // Example method to use the database after initialization
-  public async query(sql: string, params?: any[]) {
-    await this.initialized; // Ensure the schema is loaded before querying
-    return this.db.query(sql, params);
+    let output = await q(stores);
+    await tx.done;
+    return output;
   }
 }
 
-type TLD = {
-  website: string;
-  created: Date;
-  num_sublinks: number;
-};
-
-export class TLD_Queries {
+export class TopLink_Queries {
   db: Database;
 
   constructor(db: Database) {
     this.db = db;
   }
 
-  //should insert and return the upddated table
-  async insertTLD(website: string) {
-    await this.db.query(
-      `INSERT INTO tld_links (website) VALUES ($1) ON CONFLICT DO NOTHING`,
-      [website]
-    );
-    return this.getTLDs();
+  async getAll() {
+    return this.db.query(["toplinks"], async (stores) => {
+      return stores.toplinks.getAll();
+    }) as Promise<TopLink[]>;
   }
 
-  //beside getting all TLDs, we will also get an extra field called number of sublinks associated with each tld
-  async getTLDs() {
-    return this.db.query(
-      `SELECT tld_links.website, tld_links.created, COUNT(sublinks.url) as num_sublinks FROM tld_links LEFT JOIN sublinks ON tld_links.website = sublinks.tld_website GROUP BY tld_links.website, tld_links.created`
-    ) as Promise<Results<TLD>>;
+  async add(website: string) {
+    return this.db.query(["toplinks"], async (stores) => {
+      return stores.toplinks.add({
+        website,
+        created: new Date(),
+        sublinks: [],
+      });
+    });
   }
 
-  async deleteTLD(website: string) {
-    await this.db.query(`DELETE FROM tld_links WHERE website = $1`, [website]);
-    return this.getTLDs();
+  async remove(website: string) {
+    return this.db.query(["sublinks", "toplinks"], async (stores) => {
+      //delete all sublinksunder it first
+      const tld = (await stores.toplinks.get(website)) as TopLink | undefined;
+      if (!tld) throw new Error(`TLD with website ${website} not found`);
+      await Promise.all(
+        tld.sublinks.map((sublink) =>
+          stores.sublinks.delete(`${website}_${sublink}`)
+        )
+      );
+      return stores.toplinks.delete(website);
+    });
   }
 
-  //prefix searching for websites and return including the number of sublinks
-  async searchTLD(prefix: string) {
-    return this.db.query(
-      `SELECT tld_links.website, tld_links.created, COUNT(sublinks.url) as num_sublinks FROM tld_links LEFT JOIN sublinks ON tld_links.website = sublinks.tld_website WHERE tld_links.website LIKE $1 GROUP BY tld_links.website, tld_links.created`,
-      [`${prefix}%`]
-    ) as Promise<Results<TLD>>;
+  async get(website: string) {
+    return this.db.query(["toplinks"], async (stores) => {
+      return stores.toplinks.get(website);
+    }) as Promise<TopLink>;
   }
 }
-
-type Sublink = {
-  url: string;
-  created: Date;
-  num_scripts: number;
-  logging: boolean;
-};
 
 export class Sublink_Queries {
   db: Database;
@@ -146,52 +163,122 @@ export class Sublink_Queries {
     this.db = db;
   }
 
-  async insertSublink(tld_website: string, url: string) {
-    await this.db.query(
-      `INSERT INTO sublinks (tld_website, url) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-      [tld_website, url]
-    );
-    return this.getSublinks(tld_website);
+  // Get all sublinks of a TLD
+  async getAll(website: string, urls: string[]) {
+    return this.db.query(["sublinks"], async (stores) => {
+      return Promise.all(
+        urls.map((url) => stores.sublinks.get(`${website}_${url}`))
+      );
+    }) as Promise<Sublink[]>;
   }
 
-  async getSublinks(tld_website: string) {
-    return this.db.query(
-      `SELECT sublinks.url, sublinks.created, COUNT(sublink_scripts.script_name) as num_scripts, sublinks.logging FROM sublinks LEFT JOIN sublink_scripts ON sublinks.tld_website = sublink_scripts.tld_website AND sublinks.url = sublink_scripts.sublink_url WHERE sublinks.tld_website = $1 GROUP BY sublinks.url, sublinks.created, sublinks.logging`,
-      [tld_website]
-    ) as Promise<Results<Sublink>>;
+  // Add or update sublink entry in the sublink store and remember to add sublink URL to the TLD sublinks array
+  async add(tld: TopLink, url: string) {
+    return this.db.query(["sublinks", "toplinks"], async (stores) => {
+      const created = new Date();
+      const composite = `${tld.website}_${url}`;
+      tld.sublinks.push(url);
+      await stores.toplinks.put(tld);
+      return stores.sublinks.add({
+        url,
+        composite,
+        created,
+        logging: false,
+        scripts: [],
+      });
+    });
   }
 
-  async deleteSublink(tld_website: string, url: string) {
-    await this.db.query(
-      `DELETE FROM sublinks WHERE tld_website = $1 AND url = $2`,
-      [tld_website, url]
-    );
-    return this.getSublinks(tld_website);
-  }
-
-  //prefix searching for sublinks and return including the number of scripts
-  async searchSublink(tld_website: string, prefix: string) {
-    return this.db.query(
-      `SELECT sublinks.url, sublinks.created, COUNT(sublink_scripts.script_name) as num_scripts, sublinks.logging FROM sublinks LEFT JOIN sublink_scripts ON sublinks.tld_website = sublink_scripts.tld_website AND sublinks.url = sublink_scripts.sublink_url WHERE sublinks.tld_website = $1 AND sublinks.url LIKE $2 GROUP BY sublinks.url, sublinks.created, sublinks.logging`,
-      [tld_website, `${prefix}%`]
-    ) as Promise<Results<Sublink>>;
-  }
-
-  //set logging for a sublink
-  async setSublinkLogging(tld_website: string, url: string, logging: boolean) {
-    await this.db.query(
-      `UPDATE sublinks SET logging = $3 WHERE tld_website = $1 AND url = $2`,
-      [tld_website, url, logging]
-    );
-    return this.getSublinks(tld_website);
+  // remove a sublink from the sublink store and remember to remove the sublink URL from the TLD sublinks array
+  async remove(tld: TopLink, url: string) {
+    return this.db.query(["sublinks", "toplinks"], async (stores) => {
+      const composite = `${tld.website}_${url}`;
+      tld.sublinks = tld.sublinks.filter((sublink) => sublink !== url);
+      await stores.toplinks.put(tld);
+      return stores.sublinks.delete(composite);
+    });
   }
 }
 
-type Script = {
-  name: string;
-  created: Date;
-  content: string;
-};
+// //remove a sublink from the sublink store and remember to remove the sublink URL from the TLD sublinks array
+// async deleteSublink(website: string, url: string) {
+//   const db = await this.db.getDB();
+//   const tx = db.transaction(["sublinks", "tlds"], "readwrite");
+//   const sublinkStore = tx.objectStore("sublinks");
+//   const tldStore = tx.objectStore("tlds");
+
+//   try {
+//     // Update the TLD's sublinks array
+//     const tld = await tldStore.get(website);
+//     if (!tld) {
+//       console.error(`TLD with website ${website} not found`);
+//       tx.abort();
+//       return null;
+//     }
+//     tld.sublinks = tld.sublinks.filter((sublink) => sublink !== url);
+//     await tldStore.put(tld);
+
+//     // Remove the sublink entry from the sublink store
+//     await sublinkStore.delete(`${website}_${url}`);
+
+//     await tx.done;
+//     return this.getSublinks(website, tld.sublinks);
+//   } catch (error) {
+//     console.error("Failed to delete Sublink:", error);
+//     tx.abort();
+//     return null;
+//   }
+// }
+
+// //get single sublink
+// async getSublink(composite: string) {
+//   const db = await this.db.getDB();
+//   const tx = db.transaction("sublinks");
+//   const store = tx.objectStore("sublinks");
+//   try {
+//     const sublink = await store.get(composite);
+//     await tx.done;
+//     return sublink;
+//   } catch (error) {
+//     tx.abort();
+//     console.error("Failed to get Sublink:", error);
+//     return null;
+//   }
+// }
+
+// add script to sublink
+// async addScriptToSublink(sublink: Sublink, script: string) {
+//   const db = await this.db.getDB();
+//   const tx = db.transaction("sublinks", "readwrite");
+//   const store = tx.objectStore("sublinks");
+//   try {
+//     sublink.scripts.push(script);
+//     await store.put(sublink);
+//     await tx.done;
+//     return sublink;
+//   } catch (error) {
+//     console.error("Failed to add Script to Sublink:", error);
+//     tx.abort();
+//     return null;
+//   }
+// }
+
+// // remove script from sublink
+// async removeScriptFromSublink(sublink: Sublink, script: string) {
+//   const db = await this.db.getDB();
+//   const tx = db.transaction("sublinks", "readwrite");
+//   const store = tx.objectStore("sublinks");
+//   try {
+//     sublink.scripts = sublink.scripts.filter((s) => s !== script);
+//     await store.put(sublink);
+//     await tx.done;
+//     return sublink;
+//   } catch (error) {
+//     console.error("Failed to remove Script from Sublink:", error);
+//     tx.abort();
+//     return null;
+//   }
+// }
 
 export class Script_Queries {
   db: Database;
@@ -200,79 +287,31 @@ export class Script_Queries {
     this.db = db;
   }
 
-  async insertScript(name: string, content: string) {
-    await this.db.query(
-      `INSERT INTO scripts (name, content) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-      [name, content]
-    );
-    return this.getScripts();
+  async add(name: string) {
+    return this.db.query(["scripts"], async (stores) => {
+      return stores.scripts.add({
+        name,
+        created: new Date(),
+        content: "",
+      });
+    });
   }
 
-  async getScripts() {
-    return this.db.query(`SELECT * FROM scripts`) as Promise<Results<Script>>;
+  async remove(name: string) {
+    return this.db.query(["scripts"], async (stores) => {
+      return stores.scripts.delete(name);
+    });
   }
 
-  async deleteScript(name: string) {
-    await this.db.query(`DELETE FROM scripts WHERE name = $1`, [name]);
-    return this.getScripts();
+  async getAll() {
+    return this.db.query(["scripts"], async (stores) => {
+      return await stores.scripts.getAll();
+    }) as Promise<Script[]>;
   }
 
-  //prefix searching for scripts
-  async searchScript(prefix: string) {
-    return this.db.query(`SELECT * FROM scripts WHERE name LIKE $1`, [
-      `${prefix}%`,
-    ]) as Promise<Results<Script>>;
-  }
-
-  async associateScript(
-    tld_website: string,
-    sublink_url: string,
-    script_name: string
-  ) {
-    await this.db.query(
-      `INSERT INTO sublink_scripts (tld_website, sublink_url, script_name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-      [tld_website, sublink_url, script_name]
-    );
-    return this.getScripts();
-  }
-
-  async dissociateScript(
-    tld_website: string,
-    sublink_url: string,
-    script_name: string
-  ) {
-    await this.db.query(
-      `DELETE FROM sublink_scripts WHERE tld_website = $1 AND sublink_url = $2 AND script_name = $3`,
-      [tld_website, sublink_url, script_name]
-    );
-    return this.getScripts();
-  }
-
-  //get script content
-  async getScriptContent(name: string) {
-    return this.db.query(`SELECT content FROM scripts WHERE name = $1`, [
-      name,
-    ]) as Promise<Results<{ content: string }>>;
-  }
-
-  //set script content and name
-  async setScriptContent(name: string, content: string) {
-    await this.db.query(`UPDATE scripts SET content = $2 WHERE name = $1`, [
-      name,
-      content,
-    ]);
-    return this.getScripts();
-  }
-
-  //get all scripts name associated with a sublink aand return a set for
-  async getSublinkScripts(tld_website: string, sublink_url: string) {
-    return new Set(
-      (
-        (await this.db.query(
-          `SELECT script_name FROM sublink_scripts WHERE tld_website = $1 AND sublink_url = $2`,
-          [tld_website, sublink_url]
-        )) as Results<{ script_name: string }>
-      ).rows.map((row) => row.script_name)
-    );
+  async get(name: string) {
+    return this.db.query(["scripts"], async (stores) => {
+      return stores.scripts.get(name);
+    }) as Promise<Script>;
   }
 }

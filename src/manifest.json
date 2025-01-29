@@ -14,6 +14,9 @@
       "{{chrome}}.js": ["src/content.ts"]
     }
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
   "web_accessible_resources": [
     {
       "{{chrome}}.resources": ["src/inject.js"],

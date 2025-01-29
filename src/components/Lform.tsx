@@ -3,8 +3,8 @@ import React from "react";
 interface FormProps {
   placeholder: string;
   showRemoveButton?: boolean;
-  onAdd: () => void;
-  onRemove?: () => void;
+  onAdd: (e: string) => void;
+  onRemove: () => void;
 }
 
 export const Lform: React.FC<FormProps> = ({
@@ -12,28 +12,35 @@ export const Lform: React.FC<FormProps> = ({
   showRemoveButton,
   onAdd,
   onRemove,
-}) => (
-  <form className="flex w-full gap-6 h-8">
-    <input
-      className="w-96 p-4 bg-black border border-e_ash rounded-md placeholder:text-gray-400"
-      type="text"
-      placeholder={placeholder}
-    />
-    <button
-      type="button"
-      className="bg-white text-black w-20 flex justify-center items-center rounded-md text-md"
-      onClick={onAdd}
-    >
-      Add
-    </button>
-    {showRemoveButton && (
+}) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  return (
+    <form className="flex w-full gap-6 h-8">
+      <input
+        ref={inputRef}
+        className="w-96 p-4 bg-black border border-e_ash rounded-md placeholder:text-gray-400"
+        type="text"
+        placeholder={placeholder}
+      />
       <button
         type="button"
         className="bg-white text-black w-20 flex justify-center items-center rounded-md text-md"
-        onClick={onRemove}
+        onClick={() => {
+          onAdd(inputRef.current?.value.trim() || "");
+          inputRef.current!.value = "";
+        }}
       >
-        Remove
+        Add
       </button>
-    )}
-  </form>
-);
+      {showRemoveButton && (
+        <button
+          type="button"
+          className="bg-white text-black w-20 flex justify-center items-center rounded-md text-md"
+          onClick={onRemove}
+        >
+          Remove
+        </button>
+      )}
+    </form>
+  );
+};

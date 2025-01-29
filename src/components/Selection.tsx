@@ -1,29 +1,51 @@
-import React from "react";
+import React, { useState } from "react";
+import { Script, Sublink } from "../data/query";
 
 export default function Selection({ url }: { url: string }) {
-  const files = ["com", "org", "net", "gov", "edu"];
+  const [sublink, setSublink] = useState<Sublink | undefined>(undefined);
+  const [scripts, setScripts] = useState<Script[]>();
   const [markings, setMarkings] = React.useState(new Set<string>()); // Use React state
 
-  const handleCheckboxChange = (value: string, checked: boolean) => {
-    setMarkings((prev) => {
-      const newMarkings = new Set(prev);
-      if (checked) {
-        newMarkings.add(value);
-      } else {
-        newMarkings.delete(value);
-      }
-      return newMarkings;
-    });
-  };
+  // React.useEffect(() => {
+  //   if (sublinkQueries && scriptQueries) {
+  //     sublinkQueries.getSublink(url).then((sub) => {
+  //       if (sub) setSublink(sub);
+  //       setMarkings(new Set(sub?.scripts || []));
+  //     });
+  //     scriptQueries.getScripts().then((scripts) => {
+  //       setScripts(scripts || []);
+  //     });
+  //   }
+  // }, [sublinkQueries, scriptQueries]);
+
+  // const handleCheckboxChange = (value: string, checked: boolean) => {
+  //   setMarkings((prev) => {
+  //     const newMarkings = new Set(prev);
+  //     if (sublink) {
+  //       if (checked) {
+  //         sublinkQueries?.addScriptToSublink(sublink, value).then((sub) => {
+  //           if (sub) setSublink(sub);
+  //         });
+  //       } else {
+  //         sublinkQueries
+  //           ?.removeScriptFromSublink(sublink, value)
+  //           .then((sub) => {
+  //             if (sub) setSublink(sub);
+  //           });
+  //       }
+  //     }
+  //     return newMarkings;
+  //   });
+  // };
 
   const handleMainCheckboxChange = (checked: boolean) => {
-    setMarkings(() => {
-      return checked ? new Set(files) : new Set();
-    });
+    setMarkings(checked ? new Set(sublink ? sublink.scripts : []) : new Set());
   };
   return (
     <div className="w-[32rem] h-[25rem]  p-4 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-4">
-      <h1 className="mx-auto text-xl mb-4">{url + " " + "(7" + "scripts)"}</h1>
+      <h1 className="mx-auto text-xl mb-4">
+        {`${url} has ${scripts?.length} scripts`}
+      </h1>
       <div className="flex gap-6">
         <input
           className="p-2 bg-black border border-e_ash rounded-md placeholder:text-gray-400"
@@ -32,7 +54,13 @@ export default function Selection({ url }: { url: string }) {
         />
         <div className="flex items-center gap-2">
           <label htmlFor="log">Log Requests</label>
-          <input className="w-4 h-4" type="checkbox" name="" id="log" />
+          <input
+            className="w-4 h-4"
+            type="checkbox"
+            checked={sublink?.logging}
+            name=""
+            id="log"
+          />
         </div>
       </div>
       <h2 className="mx-auto">Scripts</h2>
@@ -43,7 +71,9 @@ export default function Selection({ url }: { url: string }) {
               <th className="p-2 text-left w-2/12">
                 <input
                   onChange={(e) => handleMainCheckboxChange(e.target.checked)}
-                  checked={files.every((item) => markings.has(item))} // If all items are marked, check this
+                  checked={
+                    scripts?.every((item) => markings.has(item.name)) || false
+                  } // If all items are marked, check this
                   className="w-4 h-4"
                   type="checkbox"
                 />
@@ -53,20 +83,29 @@ export default function Selection({ url }: { url: string }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-e_ash">
-            {files.map((e) => (
-              <tr key={e} className="h-10">
-                <td className="p-2 text-left w-1/12">
-                  <input
-                    onChange={(t) => handleCheckboxChange(e, t.target.checked)}
-                    checked={markings.has(e)} // Check if the individual item is marked
-                    className="w-4 h-4"
-                    type="checkbox"
-                  />
-                </td>
-                <td className="p-2 text-left w-5/12">{e}</td>
-                <td className="p-2 text-left w-2/12">2025-01-01</td>
-              </tr>
-            ))}
+            {scripts &&
+              scripts.map((e) => (
+                <tr key={e.name} className="h-10">
+                  <td className="p-2 text-left w-1/12">
+                    <input
+                      // onChange={(t) =>
+                      //   handleCheckboxChange(e.name, t.target.checked)
+                      // }
+                      checked={markings.has(e.name)} // Check if the individual item is marked
+                      className="w-4 h-4"
+                      type="checkbox"
+                    />
+                  </td>
+                  <td className="p-2 text-left w-5/12">{e.name}</td>
+                  <td className="p-2 text-left w-2/12">
+                    {e.created.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "numeric",
+                      year: "2-digit",
+                    })}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
