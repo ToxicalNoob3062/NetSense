@@ -20,7 +20,7 @@ export default function Editor({ file }: { file: string }) {
 
   // Get content
   const { data: script, isLoading } = useQuery({
-    queryKey: ["script", file],
+    queryKey: ["script" + file],
     queryFn: async () => await scriptQueries.get(file),
   });
 
@@ -35,7 +35,8 @@ export default function Editor({ file }: { file: string }) {
   const updateMutation = useMutation({
     mutationFn: async () => await scriptQueries.update(file, content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["script", file] });
+      queryClient.invalidateQueries({ queryKey: ["script" + file] });
+      queryClient.invalidateQueries({ queryKey: ["scripts"] });
       alert("Saved!");
     },
   });
