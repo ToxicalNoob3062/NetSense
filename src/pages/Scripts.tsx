@@ -6,6 +6,7 @@ import { useOverlay } from "../contexts/overLayContext";
 import { useMarker } from "../hooks/useMarker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { scriptQueries } from "../data/usage";
+import Spinner from "../components/Spinner";
 
 export default function Scripts({
   setScript,
@@ -61,70 +62,74 @@ export default function Scripts({
         }}
       />
       {/* Constrain table height */}
-      <div className="border-2 border-e_ash rounded-md overflow-auto max-h-[22rem] hidebars">
-        <table className="table-auto w-full">
-          <thead className="bg-gray-950 sticky top-0 z-10">
-            <tr className="h-10 border-b-2 border-e_ash">
-              <th className="p-2 text-left w-1/12">
-                <input
-                  onChange={(e) =>
-                    mainChecked(
-                      scripts?.map((e) => e.name) || [],
-                      e.target.checked
-                    )
-                  }
-                  checked={
-                    scripts?.every((item) => markings.has(item.name)) &&
-                    scripts.length > 0
-                  }
-                  className="w-4 h-4"
-                  type="checkbox"
-                />
-              </th>
-              <th className="p-2 text-left w-5/12">File</th>
-              <th className="p-2 text-left w-2/12">Created</th>
-              <th className="p-2 text-center w-2/12">Size</th>
-              <th className="p-2 text-center w-2/12">Edit</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-e_ash">
-            {scripts?.map((e) => (
-              <tr key={e.name} className="h-10">
-                <td className="p-2 text-left w-1/12">
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <div className="border-2 border-e_ash rounded-md overflow-auto max-h-[22rem] hidebars">
+          <table className="table-auto w-full">
+            <thead className="bg-gray-950 sticky top-0 z-10">
+              <tr className="h-10 border-b-2 border-e_ash">
+                <th className="p-2 text-left w-1/12">
                   <input
-                    onChange={(t) => checked(e.name, t.target.checked)}
-                    checked={markings.has(e.name)} // Check if the individual item is marked
+                    onChange={(e) =>
+                      mainChecked(
+                        scripts?.map((e) => e.name) || [],
+                        e.target.checked
+                      )
+                    }
+                    checked={
+                      scripts?.every((item) => markings.has(item.name)) &&
+                      scripts.length > 0
+                    }
                     className="w-4 h-4"
                     type="checkbox"
                   />
-                </td>
-                <td className="p-2 text-left w-5/12">{e.name}</td>
-                <td className="p-2 text-left w-2/12">
-                  {e.created.toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "numeric",
-                    year: "2-digit",
-                  })}
-                </td>
-                <td className="p-2 text-center w-2/12">
-                  {e.content.length / 1000} kb
-                </td>
-                <td className="p-2 text-center w-2/12">
-                  <button
-                    onClick={() => {
-                      setOverlay("editor");
-                      setScript(e.name);
-                    }}
-                    className="w-12 mx-auto flex justify-center items-center rounded-md bg-white text-black"
-                  >
-                    {"🧠"}
-                  </button>
-                </td>
+                </th>
+                <th className="p-2 text-left w-5/12">File</th>
+                <th className="p-2 text-left w-2/12">Created</th>
+                <th className="p-2 text-center w-2/12">Size</th>
+                <th className="p-2 text-center w-2/12">Edit</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-e_ash">
+              {scripts?.map((e) => (
+                <tr key={e.name} className="h-10">
+                  <td className="p-2 text-left w-1/12">
+                    <input
+                      onChange={(t) => checked(e.name, t.target.checked)}
+                      checked={markings.has(e.name)} // Check if the individual item is marked
+                      className="w-4 h-4"
+                      type="checkbox"
+                    />
+                  </td>
+                  <td className="p-2 text-left w-5/12">{e.name}.js</td>
+                  <td className="p-2 text-left w-2/12">
+                    {e.created.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "numeric",
+                      year: "2-digit",
+                    })}
+                  </td>
+                  <td className="p-2 text-center w-2/12">
+                    {e.content.length / 1000} kb
+                  </td>
+                  <td className="p-2 text-center w-2/12">
+                    <button
+                      onClick={() => {
+                        setOverlay("editor");
+                        setScript(e.name);
+                      }}
+                      className="w-12 mx-auto flex justify-center items-center rounded-md bg-white text-black"
+                    >
+                      {"🧠"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

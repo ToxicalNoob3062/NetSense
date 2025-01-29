@@ -314,4 +314,14 @@ export class Script_Queries {
       return stores.scripts.get(name);
     }) as Promise<Script>;
   }
+
+  //update script content
+  async update(name: string, content: string) {
+    return this.db.query(["scripts"], async (stores) => {
+      const script = (await stores.scripts.get(name)) as Script | undefined;
+      if (!script) throw new Error(`Script with name ${name} not found`);
+      script.content = content;
+      return stores.scripts.put(script);
+    });
+  }
 }
