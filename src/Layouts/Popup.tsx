@@ -36,7 +36,7 @@ export default function () {
       {overlay && (
         <Overlay>
           {overlay === "login" && <Password />}
-          {overlay === "selection" && <Selection url={sub} />}
+          {overlay === "selection" && <Selection composite={sub} />}
           {overlay === "editor" && <Editor file={script} />}
         </Overlay>
       )}

@@ -172,6 +172,12 @@ export class Sublink_Queries {
     }) as Promise<Sublink[]>;
   }
 
+  async get(composite: string) {
+    return this.db.query(["sublinks"], async (stores) => {
+      return stores.sublinks.get(composite);
+    }) as Promise<Sublink>;
+  }
+
   // Add or update sublink entry in the sublink store and remember to add sublink URL to the TLD sublinks array
   async add(tld: TopLink, url: string) {
     return this.db.query(["sublinks", "toplinks"], async (stores) => {
@@ -198,87 +204,31 @@ export class Sublink_Queries {
       return stores.sublinks.delete(composite);
     });
   }
+
+  //assoisate a script
+  async associate(sublink: Sublink, file: string) {
+    return this.db.query(["sublinks"], async (stores) => {
+      sublink.scripts.push(file);
+      return stores.sublinks.put(sublink);
+    });
+  }
+
+  // diassociate a script
+  async disassociate(sublink: Sublink, file: string) {
+    return this.db.query(["sublinks"], async (stores) => {
+      sublink.scripts = sublink.scripts.filter((script) => script !== file);
+      return stores.sublinks.put(sublink);
+    });
+  }
+
+  //change logging status
+  async changeLogging(sublink: Sublink, status: boolean) {
+    return this.db.query(["sublinks"], async (stores) => {
+      sublink.logging = status;
+      return stores.sublinks.put(sublink);
+    });
+  }
 }
-
-// //remove a sublink from the sublink store and remember to remove the sublink URL from the TLD sublinks array
-// async deleteSublink(website: string, url: string) {
-//   const db = await this.db.getDB();
-//   const tx = db.transaction(["sublinks", "tlds"], "readwrite");
-//   const sublinkStore = tx.objectStore("sublinks");
-//   const tldStore = tx.objectStore("tlds");
-
-//   try {
-//     // Update the TLD's sublinks array
-//     const tld = await tldStore.get(website);
-//     if (!tld) {
-//       console.error(`TLD with website ${website} not found`);
-//       tx.abort();
-//       return null;
-//     }
-//     tld.sublinks = tld.sublinks.filter((sublink) => sublink !== url);
-//     await tldStore.put(tld);
-
-//     // Remove the sublink entry from the sublink store
-//     await sublinkStore.delete(`${website}_${url}`);
-
-//     await tx.done;
-//     return this.getSublinks(website, tld.sublinks);
-//   } catch (error) {
-//     console.error("Failed to delete Sublink:", error);
-//     tx.abort();
-//     return null;
-//   }
-// }
-
-// //get single sublink
-// async getSublink(composite: string) {
-//   const db = await this.db.getDB();
-//   const tx = db.transaction("sublinks");
-//   const store = tx.objectStore("sublinks");
-//   try {
-//     const sublink = await store.get(composite);
-//     await tx.done;
-//     return sublink;
-//   } catch (error) {
-//     tx.abort();
-//     console.error("Failed to get Sublink:", error);
-//     return null;
-//   }
-// }
-
-// add script to sublink
-// async addScriptToSublink(sublink: Sublink, script: string) {
-//   const db = await this.db.getDB();
-//   const tx = db.transaction("sublinks", "readwrite");
-//   const store = tx.objectStore("sublinks");
-//   try {
-//     sublink.scripts.push(script);
-//     await store.put(sublink);
-//     await tx.done;
-//     return sublink;
-//   } catch (error) {
-//     console.error("Failed to add Script to Sublink:", error);
-//     tx.abort();
-//     return null;
-//   }
-// }
-
-// // remove script from sublink
-// async removeScriptFromSublink(sublink: Sublink, script: string) {
-//   const db = await this.db.getDB();
-//   const tx = db.transaction("sublinks", "readwrite");
-//   const store = tx.objectStore("sublinks");
-//   try {
-//     sublink.scripts = sublink.scripts.filter((s) => s !== script);
-//     await store.put(sublink);
-//     await tx.done;
-//     return sublink;
-//   } catch (error) {
-//     console.error("Failed to remove Script from Sublink:", error);
-//     tx.abort();
-//     return null;
-//   }
-// }
 
 export class Script_Queries {
   db: Database;

@@ -22,7 +22,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
 
   //queries for sublinks
   const { data: sublinks, isLoading } = useQuery({
-    queryKey: ["sublinks/", site],
+    queryKey: ["sublinks/" + site],
     queryFn: async () => await sublinkQueries.getAll(site, tld?.sublinks || []),
     enabled: !!tld,
   });
@@ -33,7 +33,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
       if (tld) return await sublinkQueries.add(tld, input);
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["sublinks/", site] });
+      queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
     },
     onError: (error) => {
       alert("Addition failed:\n\n" + error);
@@ -46,7 +46,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
       if (tld) return await sublinkQueries.remove(tld, input);
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["sublinks/", site] });
+      queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
     },
   });
 

@@ -1,50 +1,72 @@
-import React, { useState } from "react";
-import { Script, Sublink } from "../data/query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { scriptQueries, sublinkQueries } from "../data/usage";
+import Spinner from "./Spinner";
 
-export default function Selection({ url }: { url: string }) {
-  const [sublink, setSublink] = useState<Sublink | undefined>(undefined);
-  const [scripts, setScripts] = useState<Script[]>();
-  const [markings, setMarkings] = React.useState(new Set<string>()); // Use React state
+export default function Selection({ composite }: { composite: string }) {
+  const cm = composite.split("_");
+  const site = cm[0];
+  const url = cm[1];
+  const queryClient = useQueryClient();
 
-  // React.useEffect(() => {
-  //   if (sublinkQueries && scriptQueries) {
-  //     sublinkQueries.getSublink(url).then((sub) => {
-  //       if (sub) setSublink(sub);
-  //       setMarkings(new Set(sub?.scripts || []));
-  //     });
-  //     scriptQueries.getScripts().then((scripts) => {
-  //       setScripts(scripts || []);
-  //     });
-  //   }
-  // }, [sublinkQueries, scriptQueries]);
+  //get the sublink only
+  const { data: sublink } = useQuery({
+    queryKey: [composite],
+    queryFn: async () => await sublinkQueries.get(composite),
+  });
 
-  // const handleCheckboxChange = (value: string, checked: boolean) => {
-  //   setMarkings((prev) => {
-  //     const newMarkings = new Set(prev);
-  //     if (sublink) {
-  //       if (checked) {
-  //         sublinkQueries?.addScriptToSublink(sublink, value).then((sub) => {
-  //           if (sub) setSublink(sub);
-  //         });
-  //       } else {
-  //         sublinkQueries
-  //           ?.removeScriptFromSublink(sublink, value)
-  //           .then((sub) => {
-  //             if (sub) setSublink(sub);
-  //           });
-  //       }
-  //     }
-  //     return newMarkings;
-  //   });
-  // };
+  //get all scripts
+  const { data: scripts, isLoading } = useQuery({
+    queryKey: ["scripts"],
+    queryFn: async () => await scriptQueries.getAll(),
+  });
 
-  const handleMainCheckboxChange = (checked: boolean) => {
-    setMarkings(checked ? new Set(sublink ? sublink.scripts : []) : new Set());
-  };
+  //associate scripts
+  const assoMutate = useMutation({
+    mutationFn: async (input: string) => {
+      return sublink ? await sublinkQueries.associate(sublink, input) : null;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [composite] });
+      queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
+    },
+    onError: (error) => {
+      alert("Mutation failed:\n\n" + error);
+    },
+  });
+
+  //disassociate scripts
+  const disassoMutate = useMutation({
+    mutationFn: async (input: string) => {
+      return sublink ? await sublinkQueries.disassociate(sublink, input) : null;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [composite] });
+      queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
+    },
+    onError: (error) => {
+      alert("Mutation failed:\n\n" + error);
+    },
+  });
+
+  //activate logging
+  const logMutate = useMutation({
+    mutationFn: async (input: boolean) => {
+      return sublink
+        ? await sublinkQueries.changeLogging(sublink, input)
+        : null;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [composite] });
+    },
+    onError: (error) => {
+      alert("Mutation failed:\n\n" + error);
+    },
+  });
+
   return (
     <div className="w-[32rem] h-[25rem]  p-4 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-4">
       <h1 className="mx-auto text-xl mb-4">
-        {`${url} has ${scripts?.length} scripts`}
+        {`${url} (${sublink?.scripts?.length} scripts)`}
       </h1>
       <div className="flex gap-6">
         <input
@@ -57,6 +79,13 @@ export default function Selection({ url }: { url: string }) {
           <input
             className="w-4 h-4"
             type="checkbox"
+            onChange={(e) => {
+              if (e.target.checked) {
+                logMutate.mutate(e.target.checked);
+              } else {
+                logMutate.mutate(e.target.checked);
+              }
+            }}
             checked={sublink?.logging}
             name=""
             id="log"
@@ -64,36 +93,33 @@ export default function Selection({ url }: { url: string }) {
         </div>
       </div>
       <h2 className="mx-auto">Scripts</h2>
-      <div className="w-full border-2 border-e_ash rounded-md overflow-auto max-h-[22rem] hidebars">
-        <table className="table-auto w-full">
-          <thead className="bg-gray-950 sticky top-0 z-10">
-            <tr className="h-10 border-b-2 border-e_ash">
-              <th className="p-2 text-left w-2/12">
-                <input
-                  onChange={(e) => handleMainCheckboxChange(e.target.checked)}
-                  checked={
-                    scripts?.every((item) => markings.has(item.name)) || false
-                  } // If all items are marked, check this
-                  className="w-4 h-4"
-                  type="checkbox"
-                />
-              </th>
-              <th className="p-2 text-left w-5/12">File</th>
-              <th className="p-2 text-left w-5/12">Created</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-e_ash">
-            {scripts &&
-              scripts.map((e) => (
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <div className="w-full border-2 border-e_ash rounded-md overflow-auto max-h-[22rem] hidebars">
+          <table className="table-auto w-full">
+            <thead className="bg-gray-950 sticky top-0 z-10">
+              <tr className="h-10 border-b-2 border-e_ash">
+                <th className="p-2 text-left w-2/12"></th>
+                <th className="p-2 text-left w-5/12">File</th>
+                <th className="p-2 text-left w-5/12">Created</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-e_ash">
+              {scripts?.map((e) => (
                 <tr key={e.name} className="h-10">
                   <td className="p-2 text-left w-1/12">
                     <input
-                      // onChange={(t) =>
-                      //   handleCheckboxChange(e.name, t.target.checked)
-                      // }
-                      checked={markings.has(e.name)} // Check if the individual item is marked
                       className="w-4 h-4"
                       type="checkbox"
+                      checked={sublink?.scripts?.includes(e.name)}
+                      onChange={(i) => {
+                        if (i.target.checked) {
+                          assoMutate.mutate(e.name);
+                        } else {
+                          disassoMutate.mutate(e.name);
+                        }
+                      }}
                     />
                   </td>
                   <td className="p-2 text-left w-5/12">{e.name}</td>
@@ -106,9 +132,10 @@ export default function Selection({ url }: { url: string }) {
                   </td>
                 </tr>
               ))}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
