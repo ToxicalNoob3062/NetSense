@@ -1,5 +1,4 @@
 import { sendMessageToBackground } from "./data/ipc";
-import { Sublink } from "./data/query";
 
 async function main() {
   //root without protocol
@@ -32,28 +31,8 @@ async function main() {
   document.addEventListener(
     "netSense",
     async (e: CustomEventInit<NetSense>) => {
-      // `detail` is properly typed as `number` here!
-      console.log("NetSense", e.detail);
-      if (e.detail) {
-        const netSense = e.detail;
-        const url = netSense.url;
-        //get the sublink
-        const sublink = (await sendMessageToBackground({
-          type: "query",
-          query: "sublink:get",
-          params: [`${root}_${url}`],
-        })) as Sublink | undefined;
-        if (sublink) {
-          //if loggin is enabled
-          if (sublink.logging) {
-            console.log("NetSense", netSense);
-          }
-          // run all the scripts using webworkers
-          sublink.scripts.forEach((script) => {
-            console.log("running:", script);
-          });
-        }
-      }
+      // `detail` is properly typed as `NetSense` here!
+      console.log("NetSense@Content", e.detail);
     }
   );
 }
