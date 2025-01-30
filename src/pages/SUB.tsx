@@ -1,4 +1,3 @@
-import React from "react";
 import { useRouter } from "../contexts/routerContext";
 import { Pheader } from "../components/Pheader";
 import { Lform } from "../components/Lform";
@@ -7,6 +6,7 @@ import { useMarker } from "../hooks/useMarker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { sublinkQueries, topLinkQueries } from "../data/usage";
 import Spinner from "../components/Spinner";
+import useFilter from "../hooks/useFilter";
 
 export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
   const { route: site } = useRouter();
@@ -32,7 +32,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
     mutationFn: async (input: string) => {
       if (tld) return await sublinkQueries.add(tld, input);
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
     },
     onError: (error) => {
@@ -45,10 +45,13 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
     mutationFn: async (input: string) => {
       if (tld) return await sublinkQueries.remove(tld, input);
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
     },
   });
+
+  //filter out the sublinks that are not in the whitelist
+  const [filteredSublinks, doFiltration] = useFilter(sublinks || [], "url");
 
   return (
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
@@ -68,6 +71,9 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
             checked(value, false);
           });
         }}
+        onInputChange={(input: string) => {
+          doFiltration(input);
+        }}
       />
       {/* Constrain table height */}
       {isLoading ? (
@@ -81,13 +87,13 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
                   <input
                     onChange={(e) =>
                       mainChecked(
-                        sublinks?.map((e) => e.url) || [],
+                        filteredSublinks?.map((e) => e.url) || [],
                         e.target.checked
                       )
                     }
                     checked={
-                      sublinks?.every((e) => markings.has(e.url)) &&
-                      sublinks.length > 0
+                      filteredSublinks?.every((e) => markings.has(e.url)) &&
+                      filteredSublinks.length > 0
                     }
                     className="w-4 h-4"
                     type="checkbox"
@@ -100,7 +106,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-e_ash">
-              {sublinks?.map((e) => (
+              {filteredSublinks?.map((e) => (
                 <tr key={e.composite} className="h-10">
                   <td className="p-2 text-left w-1/12">
                     <input

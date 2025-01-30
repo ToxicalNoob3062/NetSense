@@ -5,6 +5,7 @@ import { useMarker } from "../hooks/useMarker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { topLinkQueries } from "../data/usage";
 import Spinner from "../components/Spinner";
+import useFilter from "../hooks/useFilter";
 
 export default function TLD() {
   const { setRoute } = useRouter();
@@ -19,7 +20,7 @@ export default function TLD() {
 
   const addMutation = useMutation({
     mutationFn: async (input: string) => await topLinkQueries.add(input),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tlds"] });
     },
     onError: (error) => {
@@ -28,10 +29,13 @@ export default function TLD() {
   });
   const removeMutation = useMutation({
     mutationFn: async (input: string) => await topLinkQueries.remove(input),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tlds"] });
     },
   });
+
+  // Filtered tlds based on keyword
+  const [filteredTlds, doFiltration] = useFilter(tlds || [], "website");
 
   return (
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
@@ -51,6 +55,9 @@ export default function TLD() {
             checked(value, false);
           });
         }}
+        onInputChange={(input: string) => {
+          doFiltration(input);
+        }}
       />
       {/* Constrain table height */}
 
@@ -65,13 +72,14 @@ export default function TLD() {
                   <input
                     onChange={(e) =>
                       mainChecked(
-                        tlds?.map((e) => e.website) || [],
+                        filteredTlds?.map((e) => e.website) || [],
                         e.target.checked
                       )
                     }
                     checked={
-                      tlds?.every((item) => markings.has(item.website)) &&
-                      tlds.length > 0
+                      filteredTlds?.every((item) =>
+                        markings.has(item.website)
+                      ) && filteredTlds.length > 0
                     } // If all items are marked, check this
                     className="w-4 h-4"
                     type="checkbox"
@@ -84,7 +92,7 @@ export default function TLD() {
               </tr>
             </thead>
             <tbody className="divide-y divide-e_ash">
-              {tlds?.map((e) => (
+              {filteredTlds?.map((e) => (
                 <tr key={e.website} className="h-10">
                   <td className="p-2 text-left w-1/12">
                     <input

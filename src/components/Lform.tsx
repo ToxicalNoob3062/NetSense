@@ -5,6 +5,7 @@ interface FormProps {
   showRemoveButton?: boolean;
   onAdd: (e: string) => void;
   onRemove: () => void;
+  onInputChange?: (e: string) => void;
 }
 
 export const Lform: React.FC<FormProps> = ({
@@ -12,6 +13,7 @@ export const Lform: React.FC<FormProps> = ({
   showRemoveButton,
   onAdd,
   onRemove,
+  onInputChange,
 }) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
   return (
@@ -21,6 +23,7 @@ export const Lform: React.FC<FormProps> = ({
         className="w-96 p-4 bg-black border border-e_ash rounded-md placeholder:text-gray-400"
         type="text"
         placeholder={placeholder}
+        onChange={(e) => onInputChange?.(e.target.value)}
       />
       <button
         type="button"
@@ -28,6 +31,7 @@ export const Lform: React.FC<FormProps> = ({
         onClick={() => {
           onAdd(inputRef.current?.value.trim() || "");
           inputRef.current!.value = "";
+          onInputChange?.("");
         }}
       >
         Add

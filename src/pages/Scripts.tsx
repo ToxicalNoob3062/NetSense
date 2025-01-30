@@ -1,5 +1,3 @@
-import React from "react";
-import { useRouter } from "../contexts/routerContext";
 import { Pheader } from "../components/Pheader";
 import { Lform } from "../components/Lform";
 import { useOverlay } from "../contexts/overLayContext";
@@ -7,6 +5,7 @@ import { useMarker } from "../hooks/useMarker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { scriptQueries } from "../data/usage";
 import Spinner from "../components/Spinner";
+import useFilter from "../hooks/useFilter";
 
 export default function Scripts({
   setScript,
@@ -42,6 +41,9 @@ export default function Scripts({
     },
   });
 
+  //filteration
+  const [filteredScripts, doFiltration] = useFilter(scripts || [], "name");
+
   return (
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
       <Pheader
@@ -60,6 +62,9 @@ export default function Scripts({
             checked(value, false);
           });
         }}
+        onInputChange={(input: string) => {
+          doFiltration(input);
+        }}
       />
       {/* Constrain table height */}
       {isLoading ? (
@@ -73,13 +78,14 @@ export default function Scripts({
                   <input
                     onChange={(e) =>
                       mainChecked(
-                        scripts?.map((e) => e.name) || [],
+                        filteredScripts?.map((e) => e.name) || [],
                         e.target.checked
                       )
                     }
                     checked={
-                      scripts?.every((item) => markings.has(item.name)) &&
-                      scripts.length > 0
+                      filteredScripts?.every((item) =>
+                        markings.has(item.name)
+                      ) && filteredScripts.length > 0
                     }
                     className="w-4 h-4"
                     type="checkbox"
@@ -92,7 +98,7 @@ export default function Scripts({
               </tr>
             </thead>
             <tbody className="divide-y divide-e_ash">
-              {scripts?.map((e) => (
+              {filteredScripts?.map((e) => (
                 <tr key={e.name} className="h-10">
                   <td className="p-2 text-left w-1/12">
                     <input
