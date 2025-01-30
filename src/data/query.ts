@@ -151,6 +151,7 @@ export class TopLink_Queries {
 
   async get(website: string) {
     return this.db.query(["toplinks"], async (stores) => {
+      console.log("website", website);
       return stores.toplinks.get(website);
     }) as Promise<TopLink>;
   }

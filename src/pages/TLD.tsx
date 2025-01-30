@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { topLinkQueries } from "../data/usage";
 import Spinner from "../components/Spinner";
 import useFilter from "../hooks/useFilter";
+import { sendMessageToContentScript } from "../data/ipc";
 
 export default function TLD() {
   const { setRoute } = useRouter();
@@ -20,8 +21,19 @@ export default function TLD() {
 
   const addMutation = useMutation({
     mutationFn: async (input: string) => await topLinkQueries.add(input),
-    onSuccess: () => {
+    onSuccess: async (_, value) => {
       queryClient.invalidateQueries({ queryKey: ["tlds"] });
+      if (
+        await sendMessageToContentScript({
+          from: "popup",
+          query: "match",
+          params: [value],
+        })
+      )
+        sendMessageToContentScript({
+          from: "popup",
+          query: "reload",
+        });
     },
     onError: (error) => {
       alert("Addition failed:\n\n" + error);
@@ -41,10 +53,10 @@ export default function TLD() {
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
       <Pheader
         title="Top Level Domains"
-        subtitle="Whitelist sites you want netsense to proctor."
+        subtitle="Whitelist origins (base_route) you want netsense to proctor."
       />
       <Lform
-        placeholder="Website Name. eg: www.google.com"
+        placeholder="Origin Name Only. eg: https://chatgpt.com"
         showRemoveButton={markings.size > 0}
         onAdd={(input) => {
           addMutation.mutate(input);

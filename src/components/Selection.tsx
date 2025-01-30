@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { scriptQueries, sublinkQueries } from "../data/usage";
 import Spinner from "./Spinner";
+import useFilter from "../hooks/useFilter";
 
 export default function Selection({ composite }: { composite: string }) {
   const cm = composite.split("_");
@@ -63,6 +64,9 @@ export default function Selection({ composite }: { composite: string }) {
     },
   });
 
+  //filter scripts
+  const [filteredScripts, doFiltration] = useFilter(scripts || [], "name");
+
   return (
     <div className="w-[32rem] h-[25rem]  p-4 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-4">
       <h1 className="mx-auto text-xl mb-4">
@@ -73,6 +77,14 @@ export default function Selection({ composite }: { composite: string }) {
           className="p-2 bg-black border border-e_ash rounded-md placeholder:text-gray-400"
           type="text"
           placeholder={"Search for snippets by name..."}
+          onKeyDown={(e) => {
+            if (e.key === " ") {
+              e.preventDefault();
+            }
+          }}
+          onChange={(e) => {
+            doFiltration(e.target.value);
+          }}
         />
         <div className="flex items-center gap-2">
           <label htmlFor="log">Log Requests</label>
@@ -106,7 +118,7 @@ export default function Selection({ composite }: { composite: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-e_ash">
-              {scripts?.map((e) => (
+              {filteredScripts?.map((e) => (
                 <tr key={e.name} className="h-10">
                   <td className="p-2 text-left w-1/12">
                     <input

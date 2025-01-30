@@ -23,7 +23,14 @@ export const Lform: React.FC<FormProps> = ({
         className="w-96 p-4 bg-black border border-e_ash rounded-md placeholder:text-gray-400"
         type="text"
         placeholder={placeholder}
-        onChange={(e) => onInputChange?.(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === " ") {
+            e.preventDefault();
+          }
+        }}
+        onChange={(e) => {
+          onInputChange?.(e.target.value);
+        }}
       />
       <button
         type="button"

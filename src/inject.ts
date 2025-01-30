@@ -23,7 +23,7 @@ class NetSense {
 }
 
 // Utility function to log network requests
-function logNetworkRequest(
+async function logNetworkRequest(
   netSense: NetSense,
   startTime: number,
   response: Response | XMLHttpRequest
@@ -43,10 +43,10 @@ function logNetworkRequest(
     response.headers.forEach((value, key) => {
       netSense.resHeaders[key] = value;
     });
-    netSense.resBody = parseResponseBody(response.clone());
+    netSense.resBody = parseResponseBody(await response.clone().text());
   }
 
-  //send the data to the background script
+  // Send the data to the background script
   document.dispatchEvent(new CustomEvent("netSense", { detail: netSense }));
 }
 
