@@ -1,5 +1,5 @@
 import browser from "webextension-polyfill";
-import { sublinkQueries, topLinkQueries } from "./data/usage";
+import { scriptQueries, sublinkQueries, topLinkQueries } from "./data/usage";
 
 browser.runtime.onInstalled.addListener((details) => {
   console.log("Extension installed:", details);
@@ -17,13 +17,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             case "toplink:get":
               const [root] = msg.params;
               const tld = await topLinkQueries.get(root);
-              console.log("tld", tld, tld === undefined);
-              sendResponse(tld === undefined);
+              sendResponse(tld);
               break;
             case "sublink:get":
               const [composite] = msg.params;
               const sublink = await sublinkQueries.get(composite);
               sendResponse(sublink);
+              break;
+            case "script:content":
+              const [script] = msg.params;
+              const scriptContent = await scriptQueries.get(script);
+              sendResponse(scriptContent);
               break;
           }
           break;

@@ -1,9 +1,20 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "../contexts/routerContext";
 import { sendMessageToContentScript } from "../data/ipc";
 
 export default function Header() {
   const { route, setRoute } = useRouter();
+  const [checked, setChecked] = React.useState(false);
+
+  useEffect(() => {
+    sendMessageToContentScript({
+      from: "popup",
+      query: "logging:get",
+    }).then((response) => {
+      setChecked(response as boolean);
+    });
+  }, []);
+
   return (
     <header className="flex justify-between items-center gap-4 pb-2">
       <button
@@ -27,13 +38,16 @@ export default function Header() {
               onChange={(e) => {
                 sendMessageToContentScript({
                   from: "popup",
-                  query: "logging",
+                  query: "logging:set",
                   params: [e.target.checked],
                 });
+                setChecked(e.target.checked);
               }}
+              checked={checked}
               type="checkbox"
               className="w-4 h-4"
             />
+
             <span className="ml-2">GL</span>
           </div>
         )}
