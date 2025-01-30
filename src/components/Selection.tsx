@@ -68,10 +68,11 @@ export default function Selection({ composite }: { composite: string }) {
   const [filteredScripts, doFiltration] = useFilter(scripts || [], "name");
 
   return (
-    <div className="w-[32rem] h-[25rem]  p-4 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-4">
-      <h1 className="mx-auto text-xl mb-4">
-        {`${url} (${sublink?.scripts?.length} scripts)`}
-      </h1>
+    <div className="w-[32rem] h-[25rem]  p-2 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-2">
+      <h1 className="mx-auto text-xl mb-2">{url}</h1>
+      <h4 className="mx-auto text-md mb-2">
+        {sublink?.scripts?.length} scripts associated
+      </h4>
       <div className="flex gap-6">
         <input
           className="p-2 bg-black border border-e_ash rounded-md placeholder:text-gray-400"

@@ -86,9 +86,12 @@ chrome.runtime.onMessage.addListener((message, _, sendMsg) => {
             main();
             sendMsg(true);
             break;
-          case "logging":
+          case "logging:set":
             logging = message.params[0];
             sendMsg(true);
+            break;
+          case "logging:get":
+            sendMsg(logging);
             break;
         }
         break;
