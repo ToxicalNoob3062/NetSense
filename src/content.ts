@@ -1,5 +1,7 @@
 import { sendMessageToBackground } from "./data/ipc";
 
+let logging = false;
+
 async function main() {
   //root without protocol
   const root = window.location.origin.replace(/^https?:\/\//, "");
@@ -32,7 +34,7 @@ async function main() {
     "netSense",
     async (e: CustomEventInit<NetSense>) => {
       // `detail` is properly typed as `NetSense` here!
-      console.log("NetSense@Content", e.detail);
+      if (logging) console.log("netsense:", e.detail);
     }
   );
 }
@@ -40,7 +42,7 @@ async function main() {
 main();
 
 chrome.runtime.onMessage.addListener((message, _, sendMsg) => {
-  (async function () {
+  (async () => {
     switch (message.from) {
       case "popup":
         switch (message.query) {
@@ -50,6 +52,11 @@ chrome.runtime.onMessage.addListener((message, _, sendMsg) => {
             break;
           case "reload":
             main();
+            sendMsg(true);
+            break;
+          case "logging":
+            logging = message.params[0];
+            sendMsg(true);
             break;
         }
         break;

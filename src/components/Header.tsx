@@ -1,5 +1,6 @@
 import React from "react";
 import { useRouter } from "../contexts/routerContext";
+import { sendMessageToContentScript } from "../data/ipc";
 
 export default function Header() {
   const { route, setRoute } = useRouter();
@@ -19,14 +20,32 @@ export default function Header() {
         <img src="/icon/32.png" />
         <h1 className="text-2xl tracking-wide font-medium">NetSense</h1>
       </div>
-      <button
-        onClick={() => {
-          setRoute("scripts");
-        }}
-        className="bg-white text-black w-20 h-10 flex justify-center items-center rounded-md text-md"
-      >
-        Scripts
-      </button>
+      <div className="flex gap-2 items-center">
+        {route === "tld" && (
+          <div className="flex justify-center items-center">
+            <input
+              onChange={(e) => {
+                sendMessageToContentScript({
+                  from: "popup",
+                  query: "logging",
+                  params: [e.target.checked],
+                });
+              }}
+              type="checkbox"
+              className="w-4 h-4"
+            />
+            <span className="ml-2">GL</span>
+          </div>
+        )}
+        <button
+          onClick={() => {
+            setRoute("scripts");
+          }}
+          className="bg-white text-black w-20 h-10 flex justify-center items-center rounded-md text-md"
+        >
+          Scripts
+        </button>
+      </div>
     </header>
   );
 }

@@ -53,10 +53,11 @@ export default function TLD() {
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
       <Pheader
         title="Top Level Domains"
-        subtitle="Whitelist origins (base_route) you want netsense to proctor."
+        subtitle="Whitelist origins (base) you want netsense to proctor."
       />
+      {/* //add a check box for global logging */}
       <Lform
-        placeholder="Origin Name Only. eg: https://chatgpt.com"
+        placeholder="Origin Name Only. eg: www.google.com"
         showRemoveButton={markings.size > 0}
         onAdd={(input) => {
           addMutation.mutate(input);
