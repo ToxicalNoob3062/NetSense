@@ -57,7 +57,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
       <Pheader
         title={site}
-        subtitle="Whitelist urls that you want to track under this site from network tab."
+        subtitle="Whitelist urls or url prefixes that you want to track under this origin."
       />
       <Lform
         placeholder="URL Name. eg: www.example.com"

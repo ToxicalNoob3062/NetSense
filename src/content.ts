@@ -17,7 +17,7 @@ async function main() {
   if (!topLink) return;
 
   //sublinks to be tracked
-  const sublinks = new Set(topLink.sublinks);
+  const sublinks = topLink.sublinks;
 
   // Create a script element
   var s = document.createElement("script");
@@ -40,11 +40,16 @@ async function main() {
       // `detail` is properly typed as `NetSense` here!
       if (logging) console.log("netsense:", e.detail);
       if (e.detail) {
-        if (sublinks.has(e.detail.url)) {
+        //check if any suiblink starts with the url
+        const selectedSublink = sublinks.find((sublink) =>
+          (e.detail as NetSense).url.startsWith(sublink)
+        );
+
+        if (selectedSublink) {
           const sublink = (await sendMessageToBackground({
             type: "query",
             query: "sublink:get",
-            params: [`${root}_${e.detail.url}`],
+            params: [`${root}_${selectedSublink}`],
           })) as Sublink | undefined;
 
           if (!logging && sublink?.logging) console.log("netsense:", e.detail);

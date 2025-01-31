@@ -51,7 +51,7 @@ export default function Scripts({
         subtitle="Make small js snippets to react on certain network events."
       />
       <Lform
-        placeholder="File Name. eg: script.js"
+        placeholder="File Name. eg: Hello"
         showRemoveButton={markings.size > 0}
         onAdd={(input) => {
           addMutation.mutate(input);
