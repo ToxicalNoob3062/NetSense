@@ -6,8 +6,7 @@ browser.runtime.onInstalled.addListener((details) => {
 });
 
 //add a message listener
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Message received:", message);
+chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   (async () => {
     try {
       const msg = message;

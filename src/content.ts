@@ -40,36 +40,39 @@ async function main() {
       // `detail` is properly typed as `NetSense` here!
       if (logging) console.log("netsense:", e.detail);
       if (e.detail) {
-        //check if any suiblink starts with the url
-        const selectedSublink = sublinks.find((sublink) =>
-          (e.detail as NetSense).url.startsWith(sublink)
-        );
+        //matched sublinks
+        const mactchedSublinks = sublinks.filter((sublink) => {
+          return (e.detail as NetSense).url.startsWith(sublink);
+        });
 
-        if (selectedSublink) {
-          const sublink = (await sendMessageToBackground({
-            type: "query",
-            query: "sublink:get",
-            params: [`${root}_${selectedSublink}`],
-          })) as Sublink | undefined;
+        mactchedSublinks.forEach(async (selectedSublink) => {
+          if (selectedSublink) {
+            const sublink = (await sendMessageToBackground({
+              type: "query",
+              query: "sublink:get",
+              params: [`${root}_${selectedSublink}`],
+            })) as Sublink | undefined;
 
-          if (!logging && sublink?.logging) console.log("netsense:", e.detail);
+            if (!logging && sublink?.logging)
+              console.log("netsense:", e.detail);
 
-          //run all the scripts associated with the sublink
-          if (sublink?.scripts) {
-            for (const name of sublink.scripts) {
-              const script = (await sendMessageToBackground({
-                type: "query",
-                query: "script:content",
-                params: [name],
-              })) as Script | undefined;
+            //run all the scripts associated with the sublink
+            if (sublink?.scripts) {
+              for (const name of sublink.scripts) {
+                const script = (await sendMessageToBackground({
+                  type: "query",
+                  query: "script:content",
+                  params: [name],
+                })) as Script | undefined;
 
-              console.log(script?.content);
+                console.log(script?.content);
 
-              //now i have to pass the e.target to the script as arguement and run it in a worker
-              //and send it output to background scripts like the logs and other stuffs that will be made by the script
+                //now i have to pass the e.target to the script as arguement and run it in a worker
+                //and send it output to background scripts like the logs and other stuffs that will be made by the script
+              }
             }
           }
-        }
+        });
       }
     }
   );
@@ -101,9 +104,12 @@ chrome.runtime.onMessage.addListener((message, _, sendMsg) => {
         }
         break;
       default:
+        sendMsg(false);
         console.log("Invalid message type");
         break;
     }
   })();
   return true;
 });
+
+console.log("Content script loaded 🚀");

@@ -10,9 +10,11 @@ export default function Header() {
     sendMessageToContentScript({
       from: "popup",
       query: "logging:get",
-    }).then((response) => {
-      setChecked(response as boolean);
-    });
+    })
+      .then((response) => {
+        setChecked(response as boolean);
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -40,7 +42,7 @@ export default function Header() {
                   from: "popup",
                   query: "logging:set",
                   params: [e.target.checked],
-                });
+                }).catch(() => {});
                 setChecked(e.target.checked);
               }}
               checked={checked}
