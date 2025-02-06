@@ -6,19 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "rm -rf ./dist && tsc && vite build",
-    "w-build": "nodemon",
-    "watch": "concurrently \"bun dev\" \"nodemon\""
+    "w-build": "nodemon"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.65.1",
     "@types/chrome": "^0.0.297",
-    "ace-builds": "^1.37.5",
-    "concurrently": "^9.1.2",
     "fake-indexeddb": "^6.0.0",
     "idb": "^8.0.1",
-    "nodemon": "^3.1.9",
     "react": "^18.2.0",
-    "react-ace": "^13.0.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {

@@ -264,21 +264,4 @@ export class EndPoint_Queries {
       return stores.endpoints.get(eName);
     }) as Promise<Endpoint>;
   }
-
-  //update endpoint name
-  async update(eName: string, newName: string) {
-    return this.db.query(["endpoints"], async (stores) => {
-      const endpoint = (await stores.endpoints.get(eName)) as
-        | Endpoint
-        | undefined;
-      if (!endpoint) throw new Error(`Endpoint with name ${eName} not found`);
-
-      // Delete the old record
-      await stores.endpoints.delete(eName);
-
-      // Insert the new record with the updated key
-      endpoint.name = newName;
-      return stores.endpoints.add(endpoint, newName);
-    });
-  }
 }
