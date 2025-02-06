@@ -23,20 +23,14 @@ export default function TLD() {
     mutationFn: async (input: string) => await topLinkQueries.add(input),
     onSuccess: async (_, value) => {
       queryClient.invalidateQueries({ queryKey: ["tlds"] });
-      if (
-        await sendMessageToContentScript({
-          from: "popup",
-          query: "match",
-          params: [value],
-        })
-      )
-        sendMessageToContentScript({
-          from: "popup",
-          query: "reload",
-        });
+      sendMessageToContentScript({
+        from: "popup",
+        query: "reload",
+        params: [value],
+      });
     },
     onError: (error) => {
-      alert("Addition failed:\n\n" + error);
+      alert("Addition failed:\n\n" + (error as Error).message);
     },
   });
   const removeMutation = useMutation({

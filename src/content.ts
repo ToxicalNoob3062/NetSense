@@ -17,29 +17,29 @@ async function main() {
 
   if (!topLink) return;
 
-  //sublinks to be tracked
-  const sublinks = topLink.sublinks;
+  const sublinks = topLink.sublinks || [];
 
-  // Create a script element
-  var s = document.createElement("script");
+  //if an script element with id `netsense` doesn't exist inject it
+  if (!document.getElementById("netsense")) {
+    var s = document.createElement("script");
+    s.id = "netsense";
+    s.src = chrome.runtime.getURL("src/inject.js");
+    s.onload = () => {
+      console.log("NetSense is Proctoring...🚀");
+    };
+    (document.head || document.documentElement).appendChild(s);
+  }
 
-  // Must be listed in web_accessible_resources in manifest.json
-  s.src = chrome.runtime.getURL("src/inject.js");
+  //if already an event listener is attached to the document on `netSense` event, then remove it
+  document.removeEventListener("netSense", () => {});
 
-  // Add the script to the DOM
-  s.onload = function () {
-    s.remove();
-    console.log("NetSense is Proctoring...🚀");
-  };
-
-  // Append the script to the head
-  (document.head || document.documentElement).appendChild(s);
-
+  //then we are free to attach a new event listener
   document.addEventListener(
     "netSense",
     async (e: CustomEventInit<NetSense>) => {
       // `detail` is properly typed as `NetSense` here!
       if (logging) console.log("netsense:", e.detail);
+
       if (e.detail) {
         //matched sublinks
         const mactchedSublinks = sublinks.filter((sublink) => {
@@ -77,13 +77,12 @@ chrome.runtime.onMessage.addListener((message, _, sendMsg) => {
     switch (message.from) {
       case "popup":
         switch (message.query) {
-          case "match":
-            const val = message.params[0];
-            sendMsg(val == window.location.origin.replace(/^https?:\/\//, ""));
-            break;
           case "reload":
-            main();
-            sendMsg(true);
+            const val = message.params[0];
+            if (val == window.location.origin.replace(/^https?:\/\//, "")) {
+              main();
+              sendMsg(true);
+            }
             break;
           case "logging:set":
             logging = message.params[0];

@@ -27,7 +27,7 @@ export default function Endpoints() {
       queryClient.invalidateQueries({ queryKey: ["endpoints"] });
     },
     onError: (error) => {
-      alert("Addition failed:\n\n" + error);
+      alert("Addition failed:\n\n" + (error as Error).message);
     },
   });
 

@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { sublinkQueries, topLinkQueries } from "../data/usage";
 import Spinner from "../components/Spinner";
 import useFilter from "../hooks/useFilter";
+import { sendMessageToContentScript } from "../data/ipc";
 
 export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
   const { route: site } = useRouter();
@@ -34,9 +35,14 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
+      sendMessageToContentScript({
+        from: "popup",
+        query: "reload",
+        params: [site],
+      });
     },
     onError: (error) => {
-      alert("Addition failed:\n\n" + error);
+      alert("Addition failed:\n\n" + (error as Error).message);
     },
   });
 
