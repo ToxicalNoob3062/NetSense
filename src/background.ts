@@ -24,10 +24,10 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
               sendResponse(sublink);
               break;
             case "endpoints:trigger":
-              const { netSense, endpointNames } = msg.params;
+              const [netSense, endpointNames] = msg.params;
               //use promise all to send the netSense to all the endpoints via post
               await Promise.all(
-                endpointNames.map(async (eName: string) => {
+                endpointNames?.map(async (eName: string) => {
                   await fetch(eName, {
                     method: "POST",
                     headers: {
