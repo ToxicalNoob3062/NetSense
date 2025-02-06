@@ -89,7 +89,7 @@ export default function Endpoints() {
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
       <Pheader
         title="Api Endpoints"
-        subtitle="Add valid endpoint names to trigger them with netsense data."
+        subtitle="Add a valid post endpoint to receive NetSense data."
       />
       <Lform
         placeholder="Endpoint URL: http://api.example.com"
