@@ -1,5 +1,5 @@
 import browser from "webextension-polyfill";
-import { scriptQueries, sublinkQueries, topLinkQueries } from "./data/usage";
+import { sublinkQueries, topLinkQueries } from "./data/usage";
 
 browser.runtime.onInstalled.addListener((details) => {
   console.log("Extension installed:", details);
@@ -23,11 +23,23 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
               const sublink = await sublinkQueries.get(composite);
               sendResponse(sublink);
               break;
-            case "script:content":
-              const [script] = msg.params;
-              const scriptContent = await scriptQueries.get(script);
-              sendResponse(scriptContent);
-              break;
+            case "endpoints:trigger":
+              const { netSense, endpointNames } = msg.params;
+              //use promise all to send the netSense to all the endpoints via post
+              await Promise.all(
+                endpointNames.map(async (eName: string) => {
+                  await fetch(eName, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(netSense),
+                  });
+                })
+              ).catch((error) =>
+                console.error("Error triggering endpoints:", error)
+              );
+              sendResponse(true);
           }
           break;
         default:

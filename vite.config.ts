@@ -10,7 +10,4 @@ export default defineConfig({
       additionalInputs: ["src/inject.ts"],
     }),
   ],
-  optimizeDeps: {
-    exclude: ["@electric-sql/pglite"],
-  },
 });

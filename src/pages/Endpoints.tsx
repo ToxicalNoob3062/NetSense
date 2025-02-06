@@ -1,57 +1,98 @@
 import { Pheader } from "../components/Pheader";
 import { Lform } from "../components/Lform";
-import { useOverlay } from "../contexts/overLayContext";
 import { useMarker } from "../hooks/useMarker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { scriptQueries } from "../data/usage";
+import { endpointQueries } from "../data/usage";
 import Spinner from "../components/Spinner";
 import useFilter from "../hooks/useFilter";
+import { useEffect, useState } from "react";
 
-export default function Scripts({
-  setScript,
-}: {
-  setScript: (s: string) => void;
-}) {
-  const { setOverlay } = useOverlay();
+export default function Endpoints() {
   const { markings, checked, mainChecked } = useMarker();
   const queryClient = useQueryClient();
 
-  //queries for scripts
-  const { data: scripts, isLoading } = useQuery({
-    queryKey: ["scripts"],
-    queryFn: async () => await scriptQueries.getAll(),
+  // State to store the status of each endpoint
+  const [statuses, setStatuses] = useState<{ [key: string]: string }>({});
+
+  //queries for endpoints
+  const { data: endpoints, isLoading } = useQuery({
+    queryKey: ["endpoints"],
+    queryFn: async () => await endpointQueries.getAll(),
   });
 
-  //add script mutation
+  //add endpoint mutation
   const addMutation = useMutation({
-    mutationFn: async (input: string) => await scriptQueries.add(input),
+    mutationFn: async (input: string) => await endpointQueries.add(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scripts"] });
+      queryClient.invalidateQueries({ queryKey: ["endpoints"] });
     },
     onError: (error) => {
       alert("Addition failed:\n\n" + error);
     },
   });
 
-  //remove script mutation
+  //remove endpoint mutation
   const removeMutation = useMutation({
-    mutationFn: async (input: string) => await scriptQueries.remove(input),
+    mutationFn: async (input: string) => await endpointQueries.remove(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scripts"] });
+      queryClient.invalidateQueries({ queryKey: ["endpoints"] });
     },
   });
 
   //filteration
-  const [filteredScripts, doFiltration] = useFilter(scripts || [], "name");
+  const [filteredEndpoints, doFiltration] = useFilter(endpoints || [], "name");
+
+  // Fetch the status of each endpoint
+  const fetchStatus = async (endpointName: string) => {
+    try {
+      const response = await fetch(endpointName, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: "http://dummy.netsense.com",
+          method: "GET",
+          reqHeaders: {
+            "Content-Type": "application/json",
+          },
+          reqBody: {},
+          resHeaders: {
+            "Content-Type": "application/json",
+          },
+          resBody: {
+            text: "Testing your endpoint@ netsense",
+          },
+        }),
+      });
+      setStatuses((prevStatuses) => ({
+        ...prevStatuses,
+        [endpointName]: response.ok ? "OK" : `Error: ${response.status}`,
+      }));
+    } catch (error) {
+      setStatuses((prevStatuses) => ({
+        ...prevStatuses,
+        [endpointName]: `Error`,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (filteredEndpoints) {
+      filteredEndpoints.forEach((endpoint) => {
+        fetchStatus(endpoint.name);
+      });
+    }
+  }, [filteredEndpoints]);
 
   return (
     <div className="flex-grow w-full flex flex-col gap-4 p-2">
       <Pheader
-        title="Javascript Files"
-        subtitle="Make small js snippets to react on certain network events."
+        title="Api Endpoints"
+        subtitle="Add valid endpoint names to trigger them with netsense data."
       />
       <Lform
-        placeholder="File Name. eg: Hello"
+        placeholder="Endpoint URL: http://api.example.com"
         showRemoveButton={markings.size > 0}
         onAdd={(input) => {
           addMutation.mutate(input);
@@ -78,27 +119,27 @@ export default function Scripts({
                   <input
                     onChange={(e) =>
                       mainChecked(
-                        filteredScripts?.map((e) => e.name) || [],
+                        filteredEndpoints?.map((e) => e.name) || [],
                         e.target.checked
                       )
                     }
                     checked={
-                      filteredScripts?.every((item) =>
+                      filteredEndpoints?.every((item) =>
                         markings.has(item.name)
-                      ) && filteredScripts.length > 0
+                      ) && filteredEndpoints.length > 0
                     }
                     className="w-4 h-4"
                     type="checkbox"
                   />
                 </th>
-                <th className="p-2 text-left w-5/12">File</th>
+                <th className="p-2 text-left w-5/12">URL</th>
                 <th className="p-2 text-left w-2/12">Created</th>
-                <th className="p-2 text-center w-2/12">Size</th>
-                <th className="p-2 text-center w-2/12">Edit</th>
+                <th className="p-2 text-center w-2/12">Status</th>
+                <th className="p-2 text-center w-2/12">Reload</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-e_ash">
-              {filteredScripts?.map((e) => (
+              {filteredEndpoints?.map((e) => (
                 <tr key={e.name} className="h-10">
                   <td className="p-2 text-left w-1/12">
                     <input
@@ -108,26 +149,23 @@ export default function Scripts({
                       type="checkbox"
                     />
                   </td>
-                  <td className="p-2 text-left w-5/12">{e.name}.js</td>
+                  <td className="p-2 text-left w-5/12">{e.name}</td>
                   <td className="p-2 text-left w-2/12">
-                    {e.created.toLocaleDateString("en-GB", {
+                    {new Date(e.created).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "numeric",
                       year: "2-digit",
                     })}
                   </td>
                   <td className="p-2 text-center w-2/12">
-                    {e.content.length / 1000} kb
+                    {statuses[e.name] || "Loading..."}
                   </td>
                   <td className="p-2 text-center w-2/12">
                     <button
-                      onClick={() => {
-                        setOverlay("editor");
-                        setScript(e.name);
-                      }}
+                      onClick={() => fetchStatus(e.name)}
                       className="w-12 mx-auto flex justify-center items-center rounded-md bg-white text-black"
                     >
-                      {"🧠"}
+                      {"🔄"}
                     </button>
                   </td>
                 </tr>

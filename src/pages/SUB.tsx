@@ -124,7 +124,9 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
                       year: "2-digit",
                     })}
                   </td>
-                  <td className="p-2 text-center w-2/12">{e.scripts.length}</td>
+                  <td className="p-2 text-center w-2/12">
+                    {e.endpoints.length}
+                  </td>
                   <td className="p-2 text-center w-2/12">
                     <button
                       onClick={() => {

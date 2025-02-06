@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { scriptQueries, sublinkQueries } from "../data/usage";
+import { endpointQueries, sublinkQueries } from "../data/usage";
 import Spinner from "./Spinner";
 import useFilter from "../hooks/useFilter";
 
@@ -16,33 +16,33 @@ export default function Selection({ composite }: { composite: string }) {
   });
 
   //get all scripts
-  const { data: scripts, isLoading } = useQuery({
+  const { data: endpoints, isLoading } = useQuery({
     queryKey: ["scripts"],
-    queryFn: async () => await scriptQueries.getAll(),
+    queryFn: async () => await endpointQueries.getAll(),
   });
 
-  //associate scripts
+  //associate endpoints
   const assoMutate = useMutation({
     mutationFn: async (input: string) => {
       return sublink ? await sublinkQueries.associate(sublink, input) : null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [composite] });
-      queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
+      queryClient.invalidateQueries({ queryKey: ["endpoints/" + site] });
     },
     onError: (error) => {
       alert("Mutation failed:\n\n" + error);
     },
   });
 
-  //disassociate scripts
+  //disassociate endpoints
   const disassoMutate = useMutation({
     mutationFn: async (input: string) => {
       return sublink ? await sublinkQueries.disassociate(sublink, input) : null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [composite] });
-      queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
+      queryClient.invalidateQueries({ queryKey: ["endpoints/" + site] });
     },
     onError: (error) => {
       alert("Mutation failed:\n\n" + error);
@@ -64,14 +64,14 @@ export default function Selection({ composite }: { composite: string }) {
     },
   });
 
-  //filter scripts
-  const [filteredScripts, doFiltration] = useFilter(scripts || [], "name");
+  //filter endpoints
+  const [filteredEndpoints, doFiltration] = useFilter(endpoints || [], "name");
 
   return (
     <div className="w-[32rem] h-[25rem]  p-2 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-center items-center gap-2">
       <h1 className="mx-auto text-xl mb-2">{url}</h1>
       <h4 className="mx-auto text-md mb-2">
-        {sublink?.scripts?.length} scripts associated
+        {sublink?.endpoints?.length} endpoints associated
       </h4>
       <div className="flex gap-6">
         <input
@@ -119,13 +119,13 @@ export default function Selection({ composite }: { composite: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-e_ash">
-              {filteredScripts?.map((e) => (
+              {filteredEndpoints?.map((e) => (
                 <tr key={e.name} className="h-10">
                   <td className="p-2 text-left w-1/12">
                     <input
                       className="w-4 h-4"
                       type="checkbox"
-                      checked={sublink?.scripts?.includes(e.name)}
+                      checked={sublink?.endpoints?.includes(e.name)}
                       onChange={(i) => {
                         if (i.target.checked) {
                           assoMutate.mutate(e.name);

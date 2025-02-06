@@ -5,18 +5,16 @@ import TLD from "../pages/TLD";
 import SUB from "../pages/SUB";
 import Password from "../components/Password";
 import Overlay from "../components/Overlay";
-import Script from "../pages/Scripts";
+import Endpoints from "../pages/Endpoints";
 import Selection from "../components/Selection";
-import Editor from "../components/Editor";
 import { useRouter } from "../contexts/routerContext";
 import { useOverlay } from "../contexts/overLayContext";
 
 export default function () {
-  let [auth, setAuth] = useState(false);
   const { route } = useRouter();
   const { overlay, setOverlay } = useOverlay();
+  let [auth, setAuth] = useState(true);
   let [sub, setSub] = useState("");
-  let [script, setScript] = useState("");
   useEffect(() => {
     if (!auth) {
       setOverlay("login");
@@ -27,8 +25,8 @@ export default function () {
       <Header />
       {route === "tld" ? (
         <TLD />
-      ) : route === "scripts" ? (
-        <Script setScript={setScript} />
+      ) : route === "endpoints" ? (
+        <Endpoints />
       ) : (
         <SUB setSub={setSub} />
       )}
@@ -37,7 +35,6 @@ export default function () {
         <Overlay>
           {overlay === "login" && <Password />}
           {overlay === "selection" && <Selection composite={sub} />}
-          {overlay === "editor" && <Editor file={script} />}
         </Overlay>
       )}
     </div>

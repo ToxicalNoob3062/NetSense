@@ -33,13 +33,12 @@ export type Sublink = {
   url: string;
   created: Date;
   logging: boolean;
-  scripts: string[];
+  endpoints: string[];
 };
 
-export type Script = {
+export type Endpoint = {
   created: Date;
   name: string;
-  content: string;
 };
 
 interface DatabaseSchema extends DBSchema {
@@ -51,9 +50,9 @@ interface DatabaseSchema extends DBSchema {
     key: string;
     value: Sublink;
   };
-  scripts: {
+  endpoints: {
     key: string;
-    value: Script;
+    value: Endpoint;
   };
 }
 
@@ -71,7 +70,7 @@ export class Database {
           keyPath: "composite",
           autoIncrement: false,
         });
-        db.createObjectStore("scripts", {
+        db.createObjectStore("endpoints", {
           keyPath: "name",
           autoIncrement: false,
         });
@@ -80,12 +79,12 @@ export class Database {
   }
 
   async query(
-    storeNames: ("toplinks" | "sublinks" | "scripts")[],
+    storeNames: ("toplinks" | "sublinks" | "endpoints")[],
     q: (stores: {
-      [K in "toplinks" | "sublinks" | "scripts"]: IDBPObjectStore<
+      [K in "toplinks" | "sublinks" | "endpoints"]: IDBPObjectStore<
         DatabaseSchema,
-        ("toplinks" | "sublinks" | "scripts")[],
-        "toplinks" | "sublinks" | "scripts",
+        ("toplinks" | "sublinks" | "endpoints")[],
+        "toplinks" | "sublinks" | "endpoints",
         "readwrite"
       >;
     }) => Promise<any>
@@ -98,10 +97,10 @@ export class Database {
         return acc;
       },
       {} as {
-        [K in "toplinks" | "sublinks" | "scripts"]: IDBPObjectStore<
+        [K in "toplinks" | "sublinks" | "endpoints"]: IDBPObjectStore<
           DatabaseSchema,
-          ("toplinks" | "sublinks" | "scripts")[],
-          "toplinks" | "sublinks" | "scripts",
+          ("toplinks" | "sublinks" | "endpoints")[],
+          "toplinks" | "sublinks" | "endpoints",
           "readwrite"
         >;
       }
@@ -151,7 +150,6 @@ export class TopLink_Queries {
 
   async get(website: string) {
     return this.db.query(["toplinks"], async (stores) => {
-      console.log("website", website);
       return stores.toplinks.get(website);
     }) as Promise<TopLink>;
   }
@@ -191,7 +189,7 @@ export class Sublink_Queries {
         composite,
         created,
         logging: false,
-        scripts: [],
+        endpoints: [],
       });
     });
   }
@@ -206,18 +204,20 @@ export class Sublink_Queries {
     });
   }
 
-  //assoisate a script
-  async associate(sublink: Sublink, file: string) {
+  //assoisate a endpoint
+  async associate(sublink: Sublink, eName: string) {
     return this.db.query(["sublinks"], async (stores) => {
-      sublink.scripts.push(file);
+      sublink.endpoints.push(eName);
       return stores.sublinks.put(sublink);
     });
   }
 
-  // diassociate a script
-  async disassociate(sublink: Sublink, file: string) {
+  // diassociate a endpoint
+  async disassociate(sublink: Sublink, eName: string) {
     return this.db.query(["sublinks"], async (stores) => {
-      sublink.scripts = sublink.scripts.filter((script) => script !== file);
+      sublink.endpoints = sublink.endpoints.filter(
+        (ePoint) => ePoint !== eName
+      );
       return stores.sublinks.put(sublink);
     });
   }
@@ -231,48 +231,54 @@ export class Sublink_Queries {
   }
 }
 
-export class Script_Queries {
+export class EndPoint_Queries {
   db: Database;
 
   constructor(db: Database) {
     this.db = db;
   }
 
-  async add(name: string) {
-    return this.db.query(["scripts"], async (stores) => {
-      return stores.scripts.add({
-        name,
+  async add(eName: string) {
+    return this.db.query(["endpoints"], async (stores) => {
+      return stores.endpoints.add({
+        name: eName,
         created: new Date(),
-        content: "",
       });
     });
   }
 
   async remove(name: string) {
-    return this.db.query(["scripts"], async (stores) => {
-      return stores.scripts.delete(name);
+    return this.db.query(["endpoints"], async (stores) => {
+      return stores.endpoints.delete(name);
     });
   }
 
   async getAll() {
-    return this.db.query(["scripts"], async (stores) => {
-      return await stores.scripts.getAll();
-    }) as Promise<Script[]>;
+    return this.db.query(["endpoints"], async (stores) => {
+      return await stores.endpoints.getAll();
+    }) as Promise<Endpoint[]>;
   }
 
-  async get(name: string) {
-    return this.db.query(["scripts"], async (stores) => {
-      return stores.scripts.get(name);
-    }) as Promise<Script>;
+  async get(eName: string) {
+    return this.db.query(["endpoints"], async (stores) => {
+      return stores.endpoints.get(eName);
+    }) as Promise<Endpoint>;
   }
 
-  //update script content
-  async update(name: string, content: string) {
-    return this.db.query(["scripts"], async (stores) => {
-      const script = (await stores.scripts.get(name)) as Script | undefined;
-      if (!script) throw new Error(`Script with name ${name} not found`);
-      script.content = content;
-      return stores.scripts.put(script);
+  //update endpoint name
+  async update(eName: string, newName: string) {
+    return this.db.query(["endpoints"], async (stores) => {
+      const endpoint = (await stores.endpoints.get(eName)) as
+        | Endpoint
+        | undefined;
+      if (!endpoint) throw new Error(`Endpoint with name ${eName} not found`);
+
+      // Delete the old record
+      await stores.endpoints.delete(eName);
+
+      // Insert the new record with the updated key
+      endpoint.name = newName;
+      return stores.endpoints.add(endpoint, newName);
     });
   }
 }

@@ -1,5 +1,6 @@
 import { sendMessageToBackground } from "./data/ipc";
-import { Script, Sublink, TopLink } from "./data/query";
+import { TopLink, Sublink } from "./data/query";
+import { NetSense } from "./inject";
 
 let logging = false;
 
@@ -28,7 +29,7 @@ async function main() {
   // Add the script to the DOM
   s.onload = function () {
     s.remove();
-    console.log("NetSense is Proctoring... 🚀");
+    console.log("NetSense is Proctoring...🚀");
   };
 
   // Append the script to the head
@@ -46,31 +47,21 @@ async function main() {
         });
 
         mactchedSublinks.forEach(async (selectedSublink) => {
-          if (selectedSublink) {
-            const sublink = (await sendMessageToBackground({
+          const sublink = (await sendMessageToBackground({
+            type: "query",
+            query: "sublink:get",
+            params: [`${root}_${selectedSublink}`],
+          })) as Sublink | undefined;
+
+          if (!logging && sublink?.logging) console.log("netsense:", e.detail);
+
+          //send
+          if (sublink?.endpoints) {
+            sendMessageToBackground({
               type: "query",
-              query: "sublink:get",
-              params: [`${root}_${selectedSublink}`],
-            })) as Sublink | undefined;
-
-            if (!logging && sublink?.logging)
-              console.log("netsense:", e.detail);
-
-            //run all the scripts associated with the sublink
-            if (sublink?.scripts) {
-              for (const name of sublink.scripts) {
-                const script = (await sendMessageToBackground({
-                  type: "query",
-                  query: "script:content",
-                  params: [name],
-                })) as Script | undefined;
-
-                console.log(script?.content);
-
-                //now i have to pass the e.target to the script as arguement and run it in a worker
-                //and send it output to background scripts like the logs and other stuffs that will be made by the script
-              }
-            }
+              query: "endpoints:trigger",
+              params: [e.detail, sublink.endpoints],
+            });
           }
         });
       }

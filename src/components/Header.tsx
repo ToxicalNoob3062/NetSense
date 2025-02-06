@@ -55,11 +55,11 @@ export default function Header() {
         )}
         <button
           onClick={() => {
-            setRoute("scripts");
+            setRoute("endpoints");
           }}
           className="bg-white text-black w-20 h-10 flex justify-center items-center rounded-md text-md"
         >
-          Scripts
+          EPoints
         </button>
       </div>
     </header>

@@ -1,4 +1,4 @@
-class NetSense {
+export class NetSense {
   url: string;
   method: string;
   reqHeaders: Record<string, string>;
