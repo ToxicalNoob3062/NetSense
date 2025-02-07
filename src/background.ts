@@ -1,8 +1,42 @@
-import browser from "webextension-polyfill";
-import { sublinkQueries, topLinkQueries } from "./data/usage";
+import { sublinkQueries, topLinkQueries, settingsQueries } from "./data/usage";
 
-browser.runtime.onInstalled.addListener((details) => {
-  console.log("Extension installed:", details);
+let vr = true;
+
+//when installed set om to true
+chrome.runtime.onInstalled.addListener(async () => {
+  await settingsQueries.set("OM", "true");
+});
+
+// Event listener for when the browser starts up
+chrome.runtime.onStartup.addListener(async () => {
+  console.log("Browser started...");
+  vr = false;
+  setTimeout(() => {
+    vr = true;
+  }, 2000);
+});
+
+// Event listener for when the extension is re-enabled after being suspended
+chrome.management.onEnabled.addListener(async (extensionInfo) => {
+  setTimeout(async () => {
+    if (
+      extensionInfo.shortName === "NetSense" &&
+      vr &&
+      (await settingsQueries.get("OM")).value === "true"
+    ) {
+      //get the owner email and send it to the endpoint
+      const email = await settingsQueries.get("email");
+      if (email) {
+        fetch("https://mailer-theta-two.vercel.app/api/netsense", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ownerEmail: "rahat3062@gmail.com" }),
+        }).catch(() => {});
+      }
+    }
+  }, 1000);
 });
 
 //add a message listener

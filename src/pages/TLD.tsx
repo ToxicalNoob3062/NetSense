@@ -27,7 +27,7 @@ export default function TLD() {
         from: "popup",
         query: "reload",
         params: [value],
-      });
+      }).catch(()=>{});
     },
     onError: (error) => {
       alert("Addition failed:\n\n" + (error as Error).message);

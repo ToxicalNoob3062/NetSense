@@ -1,10 +1,12 @@
 import React, { useEffect } from "react";
 import { useRouter } from "../contexts/routerContext";
 import { sendMessageToContentScript } from "../data/ipc";
+import { settingsQueries } from "../data/usage";
 
 export default function Header() {
   const { route, setRoute } = useRouter();
   const [checked, setChecked] = React.useState(false);
+  const [omChecked, setOmChecked] = React.useState(false);
 
   useEffect(() => {
     sendMessageToContentScript({
@@ -15,7 +17,20 @@ export default function Header() {
         setChecked(response as boolean);
       })
       .catch(() => {});
+
+    const fetchOmSetting = async () => {
+      const omSetting = await settingsQueries.get("OM");
+      setOmChecked(omSetting.value === "true");
+    };
+
+    fetchOmSetting();
   }, []);
+
+  const handleOmChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.checked ? "true" : "false";
+    setOmChecked(e.target.checked); // Update state immediately
+    await settingsQueries.set("OM", newValue); // Perform async operation
+  };
 
   return (
     <header className="flex justify-between items-center gap-4 pb-2">
@@ -35,23 +50,33 @@ export default function Header() {
       </div>
       <div className="flex gap-2 items-center">
         {route === "tld" && (
-          <div className="flex justify-center items-center">
-            <input
-              onChange={(e) => {
-                sendMessageToContentScript({
-                  from: "popup",
-                  query: "logging:set",
-                  params: [e.target.checked],
-                }).catch(() => {});
-                setChecked(e.target.checked);
-              }}
-              checked={checked}
-              type="checkbox"
-              className="w-4 h-4"
-            />
-
-            <span className="ml-2">GL</span>
-          </div>
+          <>
+            <div className="flex justify-center items-center">
+              <input
+                onChange={(e) => {
+                  sendMessageToContentScript({
+                    from: "popup",
+                    query: "logging:set",
+                    params: [e.target.checked],
+                  }).catch(() => {});
+                  setChecked(e.target.checked);
+                }}
+                checked={checked}
+                type="checkbox"
+                className="w-4 h-4"
+              />
+              <span className="ml-2">GL</span>
+            </div>
+            <div className="flex justify-center items-center">
+              <input
+                onChange={handleOmChange}
+                checked={omChecked}
+                type="checkbox"
+                className="w-4 h-4"
+              />
+              <span className="ml-2">OM</span>
+            </div>
+          </>
         )}
         <button
           onClick={() => {

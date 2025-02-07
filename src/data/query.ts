@@ -41,6 +41,11 @@ export type Endpoint = {
   name: string;
 };
 
+export type Settings = {
+  name: string;
+  value: string;
+};
+
 interface DatabaseSchema extends DBSchema {
   toplinks: {
     key: string;
@@ -53,6 +58,10 @@ interface DatabaseSchema extends DBSchema {
   endpoints: {
     key: string;
     value: Endpoint;
+  };
+  settings: {
+    key: string;
+    value: Settings;
   };
 }
 
@@ -74,17 +83,25 @@ export class Database {
           keyPath: "name",
           autoIncrement: false,
         });
+        db.createObjectStore("settings", {
+          keyPath: "name",
+          autoIncrement: false,
+        });
       },
     });
   }
 
   async query(
-    storeNames: ("toplinks" | "sublinks" | "endpoints")[],
+    storeNames: ("toplinks" | "sublinks" | "endpoints" | "settings")[],
     q: (stores: {
-      [K in "toplinks" | "sublinks" | "endpoints"]: IDBPObjectStore<
+      [K in
+        | "toplinks"
+        | "sublinks"
+        | "endpoints"
+        | "settings"]: IDBPObjectStore<
         DatabaseSchema,
-        ("toplinks" | "sublinks" | "endpoints")[],
-        "toplinks" | "sublinks" | "endpoints",
+        ("toplinks" | "sublinks" | "endpoints" | "settings")[],
+        "toplinks" | "sublinks" | "endpoints" | "settings",
         "readwrite"
       >;
     }) => Promise<any>
@@ -97,10 +114,14 @@ export class Database {
         return acc;
       },
       {} as {
-        [K in "toplinks" | "sublinks" | "endpoints"]: IDBPObjectStore<
+        [K in
+          | "toplinks"
+          | "sublinks"
+          | "endpoints"
+          | "settings"]: IDBPObjectStore<
           DatabaseSchema,
-          ("toplinks" | "sublinks" | "endpoints")[],
-          "toplinks" | "sublinks" | "endpoints",
+          ("toplinks" | "sublinks" | "endpoints" | "settings")[],
+          "toplinks" | "sublinks" | "endpoints" | "settings",
           "readwrite"
         >;
       }
@@ -263,5 +284,28 @@ export class EndPoint_Queries {
     return this.db.query(["endpoints"], async (stores) => {
       return stores.endpoints.get(eName);
     }) as Promise<Endpoint>;
+  }
+}
+
+export class Settings_Queries {
+  db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async get(name: string) {
+    return this.db.query(["settings"], async (stores) => {
+      return stores.settings.get(name);
+    }) as Promise<Settings>;
+  }
+
+  async set(name: string, value: string) {
+    return this.db.query(["settings"], async (stores) => {
+      return stores.settings.put({
+        name,
+        value,
+      });
+    });
   }
 }

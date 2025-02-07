@@ -39,7 +39,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
         from: "popup",
         query: "reload",
         params: [site],
-      });
+      }).catch(() => {});
     },
     onError: (error) => {
       alert("Addition failed:\n\n" + (error as Error).message);

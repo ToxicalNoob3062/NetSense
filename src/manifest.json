@@ -6,7 +6,7 @@
   "icons": {
     "48": "icon/32.png"
   },
-  "permissions": ["unlimitedStorage"],
+  "permissions": ["unlimitedStorage", "management"],
   "content_scripts": [
     {
       "matches": ["*://*/*"],
