@@ -2,11 +2,6 @@ import { sublinkQueries, topLinkQueries, settingsQueries } from "./data/usage";
 
 let vr = true;
 
-//when installed set om to true
-chrome.runtime.onInstalled.addListener(async () => {
-  await settingsQueries.set("OM", "true");
-});
-
 // Event listener for when the browser starts up
 chrome.runtime.onStartup.addListener(async () => {
   console.log("Browser started...");
