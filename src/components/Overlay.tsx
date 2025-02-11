@@ -10,7 +10,7 @@ export default function Overlay({
 }) {
   const { setOverlay } = useOverlay();
   return (
-    <div className="w-full h-full bg-black bg-opacity-90 fixed top-0 left-0 flex justify-center items-center z-20">
+    <div className="w-full h-full bg-black bg-opacity-95 fixed top-0 left-0 flex justify-center items-center z-20">
       {children}
       {!lock && (
         <button

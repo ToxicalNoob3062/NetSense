@@ -78,14 +78,16 @@ export default function Header() {
             </div>
           </>
         )}
-        <button
-          onClick={() => {
-            setRoute("endpoints");
-          }}
-          className="bg-white text-black w-20 h-10 flex justify-center items-center rounded-md text-md"
-        >
-          EPoints
-        </button>
+        {route !== "endpoints" && (
+          <button
+            onClick={() => {
+              setRoute("endpoints");
+            }}
+            className="bg-white text-black w-20 h-10 flex justify-center items-center rounded-md text-md"
+          >
+            EPoints
+          </button>
+        )}
       </div>
     </header>
   );

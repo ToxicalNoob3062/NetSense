@@ -49,7 +49,9 @@ export default function DataTable<T extends DataWithCreated>({
             {columns.map((column, i) => (
               <th
                 key={column}
-                className={`p-2 text-left ${i == 0 ? "w-5/12" : "w-2/12"}`}
+                className={`p-2 ${i > 1 ? "text-center" : "text-left"} ${
+                  i == 0 ? "w-5/12" : "w-2/12"
+                }`}
               >
                 {column}
               </th>
@@ -80,12 +82,12 @@ export default function DataTable<T extends DataWithCreated>({
               <td className="p-2 text-center w-2/12">
                 {populateExtraField(e)}
               </td>
-              <td className="p-2 text-center w-2/12">
+              <td className="p-2 w-2/12">
                 <button
                   onClick={() => buttonHandler(e)}
-                  className="w-12 font-bold mx-auto flex justify-center items-center rounded-md bg-white text-black"
+                  className="w-12 font-bold mx-auto flex justify-center items-center rounded-md border-2 border-white"
                 >
-                  {"⏭️"}
+                  {"✨"}
                 </button>
               </td>
             </tr>
