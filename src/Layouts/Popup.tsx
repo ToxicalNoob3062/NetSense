@@ -33,9 +33,9 @@ export default function Popup() {
     }
   }, [auth, omChecked]);
 
-  if (omChecked === null) {
-    return <div>Loading...</div>; // Show a loading state while fetching the setting
-  }
+  // if (omChecked === null) {
+  //   return <div>Loading...</div>; // Show a loading state while fetching the setting
+  // }
 
   return (
     <div className="w-full bg-e_black border border-e_ash text-white font-sans min-h-screen p-4 flex flex-col z-10">
