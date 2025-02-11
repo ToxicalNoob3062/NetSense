@@ -91,6 +91,19 @@ export class Database {
     });
   }
 
+  //generate key for encrption using webcrypto
+  async generateKey() {
+    const key = await window.crypto.subtle.generateKey(
+      {
+        name: "AES-GCM",
+        length: 256,
+      },
+      true,
+      ["encrypt", "decrypt"]
+    );
+    return key;
+  }
+
   async query(
     storeNames: ("toplinks" | "sublinks" | "endpoints" | "settings")[],
     q: (stores: {
