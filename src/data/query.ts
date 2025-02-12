@@ -1,4 +1,5 @@
 import { openDB, IDBPDatabase, DBSchema, IDBPObjectStore } from "idb";
+import { sendEmail } from "../background";
 
 // Use fake-indexeddb in Node.js environment
 if (typeof indexedDB === "undefined") {
@@ -112,6 +113,24 @@ export class Database {
     if ((await this.totalEntries()) !== expectedEntries.value) {
       //delete count permerantly
       await this.settings.remove("count");
+      // get the email sent attribute:
+      let emailSent = await this.settings.get("emailSent");
+      if (!emailSent || emailSent.value === "false") {
+        //send Email to admin
+        sendEmail(`
+          <p style="color: red; font-weight: bold;">Database Tampering Detected ⚠️</p>
+          <p style="line-height: 1.5;">
+            This email is to inform you that the NetSense extension has detected potential tampering with the database. This could indicate unauthorized activity.
+          </p>
+          <p style="line-height: 1.5;">
+            To resolve this issue, please reinstall the NetSense extension from scratch. This will ensure that the extension is restored to its original state and any unauthorized changes are removed.
+          </p>
+          <p style="line-height: 1.5;">
+            <strong>Note:</strong> This is an automated notification from NetSense.
+          </p>
+        `);
+        this.settings.set("emailSent", "true");
+      }
       return true;
     }
     return false;

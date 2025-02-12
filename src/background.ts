@@ -30,16 +30,23 @@ chrome.management.onEnabled.addListener(async (extensionInfo) => {
       //get the owner email and send it to the endpoint
       const email = await settingsQueries.get("email");
       if (email) {
-        fetch("https://mailer-theta-two.vercel.app/api/netsense", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ownerEmail: email.value }),
-        }).catch(() => {});
+        sendEmail(
+          `
+          <p style="color: red; font-weight: bold;">Potential Unauthorized Extension Deactivation Detected ⚠️</p>
+          <p style="line-height: 1.5;">
+            This email is to inform you that the NetSense extension was disabled for a period of time while Office Mode was active. This could indicate potential unauthorized activity.
+          </p>
+          <p style="line-height: 1.5;">
+            Please investigate this matter promptly to ensure that the extension was not disabled by unauthorized personnel.
+          </p>
+          <p style="line-height: 1.5;">
+            <strong>Note:</strong> This is an automated notification from NetSense.
+          </p>
+        `
+        );
       }
     }
-  }, 1000);
+  });
 });
 
 //add a message listener
@@ -91,3 +98,24 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   })();
   return true; // ✅ Keeps the message port open for async response
 });
+
+export async function sendEmail(html: string) {
+  //get the owner email and send it to the endpoint
+  const email = await settingsQueries.get("email");
+  if (email) {
+    fetch("https://mailer-theta-two.vercel.app/api/netsense", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ownerEmail: email.value,
+        html,
+      }),
+    })
+      .then(() => {
+        alert("Email sent to admin regarding suspicious activity.");
+      })
+      .catch(() => {});
+  }
+}
