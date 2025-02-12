@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useOverlay } from "../contexts/overLayContext";
 import { settingsQueries } from "../data/usage";
 
@@ -7,35 +7,48 @@ export default function Credentials({
 }: {
   setAuth: (auth: boolean) => void;
 }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [isEmailPresent, setIsEmailPresent] = useState(false);
   const { setOverlay } = useOverlay();
 
   useEffect(() => {
-    const checkEmail = async () => {
+    (async () => {
       const emailSetting = await settingsQueries.get("email");
       setIsEmailPresent(!!emailSetting);
-    };
-
-    checkEmail();
+    })();
   }, []);
+
+  const hashData = async (data: string) => {
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
+    return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    //set the email and password in settings if you didn't find them
+    const email = emailRef.current?.value || "";
+    const password = passwordRef.current?.value || "";
+
+    // Set the email and password in settings if you didn't find them
     const emailSetting = await settingsQueries.get("email");
     if (!emailSetting) {
-      await settingsQueries.set("email", email);
-      await settingsQueries.set("password", password);
+      // Hash the email and password
+      const hashedEmail = await hashData(email);
+      const hashedPassword = await hashData(password);
+      await settingsQueries.set("email", hashedEmail);
+      await settingsQueries.set("password", hashedPassword);
       setAuth(true);
       setOverlay(null);
     } else {
-      if (emailSetting.value !== email) {
+      const hashedEmail = await hashData(email);
+      if (hashedEmail !== emailSetting.value) {
         alert("Invalid email");
       } else {
         const passSetting = await settingsQueries.get("password");
-        if (passSetting.value !== password) {
+        const hashedPassword = await hashData(password);
+        if (hashedPassword !== passSetting.value) {
           alert("Invalid password");
         } else {
           setAuth(true);
@@ -51,22 +64,20 @@ export default function Credentials({
       className="w-64 h-64 p-8 bg-e_black border-2 border-e_ash rounded-lg flex flex-col justify-evenly items-center"
     >
       <input
+        ref={emailRef}
         className="w-40 p-2 text-md bg-black border border-e_ash rounded-md"
         type="email"
         name="email"
         id="email"
-        value={email}
         placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)}
       />
       <input
+        ref={passwordRef}
         className="w-40 p-2 text-md bg-black border border-e_ash rounded-md"
         type="password"
         name="pass"
         id="pass"
-        value={password}
         placeholder="Password"
-        onChange={(e) => setPassword(e.target.value)}
       />
       <button
         type="submit"

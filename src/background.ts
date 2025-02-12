@@ -2,6 +2,14 @@ import { sublinkQueries, topLinkQueries, settingsQueries } from "./data/usage";
 
 let vr = true;
 
+// Event listener for when the extension is installed
+chrome.runtime.onInstalled.addListener(async () => {
+  console.log("Extension installed...");
+  //set the default settings
+  await settingsQueries.set("count", 1);
+  await settingsQueries.set("OM", "false");
+});
+
 // Event listener for when the browser starts up
 chrome.runtime.onStartup.addListener(async () => {
   console.log("Browser started...");
@@ -27,7 +35,7 @@ chrome.management.onEnabled.addListener(async (extensionInfo) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ ownerEmail: "rahat3062@gmail.com" }),
+          body: JSON.stringify({ ownerEmail: email.value }),
         }).catch(() => {});
       }
     }
@@ -72,13 +80,13 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
           }
           break;
         default:
-          console.log("Invalid message type");
-          sendResponse("Invalid message type");
+          console.error("Invalid message type");
+          sendResponse(false);
           break;
       }
     } catch (error) {
       console.error("Error processing message:", error);
-      sendResponse(null);
+      sendResponse(false);
     }
   })();
   return true; // ✅ Keeps the message port open for async response

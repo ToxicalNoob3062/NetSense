@@ -9,6 +9,7 @@ export default function Header() {
   const [omChecked, setOmChecked] = React.useState(false);
 
   useEffect(() => {
+    //get the value of logging from the content script
     sendMessageToContentScript({
       from: "popup",
       query: "logging:get",
@@ -18,18 +19,18 @@ export default function Header() {
       })
       .catch(() => {});
 
-    const fetchOmSetting = async () => {
+    //for OM mode get the value from the indexedDB
+    (async () => {
       const omSetting = await settingsQueries.get("OM");
       setOmChecked(omSetting.value === "true");
-    };
-
-    fetchOmSetting();
+    })();
   }, []);
 
+  // handle the logging checkbox change
   const handleOmChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked ? "true" : "false";
-    setOmChecked(e.target.checked); // Update state immediately
-    await settingsQueries.set("OM", newValue); // Perform async operation
+    setOmChecked(e.target.checked);
+    await settingsQueries.set("OM", newValue);
   };
 
   return (

@@ -10,6 +10,7 @@ import { useRouter } from "../contexts/routerContext";
 import { useOverlay } from "../contexts/overLayContext";
 import { settingsQueries } from "../data/usage";
 import { useEffect, useState } from "react";
+import Spinner from "../components/Spinner";
 
 export default function Popup() {
   const { route } = useRouter();
@@ -17,14 +18,17 @@ export default function Popup() {
   const [auth, setAuth] = useState(false);
   const [sub, setSub] = useState("");
   const [omChecked, setOmChecked] = useState<boolean | null>(null);
+  const [isCountPresent, setIsCountPresent] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const fetchOmSetting = async () => {
-      const omSetting = await settingsQueries.get("OM");
-      setOmChecked(omSetting.value === "true");
-    };
-
-    fetchOmSetting();
+    (async () => {
+      const tampered = await settingsQueries.db.hasUserModified();
+      setIsCountPresent(!tampered);
+      if (!tampered) {
+        const omSetting = await settingsQueries.get("OM");
+        setOmChecked(omSetting.value === "true");
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -33,9 +37,23 @@ export default function Popup() {
     }
   }, [auth, omChecked]);
 
-  // if (omChecked === null) {
-  //   return <div>Loading...</div>; // Show a loading state while fetching the setting
-  // }
+  if (isCountPresent == null) {
+    return (
+      <div className="bg-black min-h-screen flex justify-center items-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!isCountPresent) {
+    return (
+      <div className="bg-black min-h-screen text-white text-center flex items-center">
+        Data has been tampered with. You are guilty. Please contact with your
+        owner immediately for resolving current issue. Netsense has already
+        mailed this scenario to the owner with resolving solutions.
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-e_black border border-e_ash text-white font-sans min-h-screen p-4 flex flex-col z-10">

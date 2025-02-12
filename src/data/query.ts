@@ -43,7 +43,7 @@ export type Endpoint = {
 
 export type Settings = {
   name: string;
-  value: string;
+  value: string | number;
 };
 
 interface DatabaseSchema extends DBSchema {
@@ -67,6 +67,7 @@ interface DatabaseSchema extends DBSchema {
 
 export class Database {
   dbPromise: Promise<IDBPDatabase<DatabaseSchema>>;
+  settings: Settings_Queries;
 
   constructor(name: string) {
     this.dbPromise = openDB<DatabaseSchema>(name, 1, {
@@ -89,19 +90,37 @@ export class Database {
         });
       },
     });
+    this.settings = new Settings_Queries(this);
   }
 
-  //generate key for encrption using webcrypto
-  async generateKey() {
-    const key = await window.crypto.subtle.generateKey(
-      {
-        name: "AES-GCM",
-        length: 256,
-      },
-      true,
-      ["encrypt", "decrypt"]
-    );
-    return key;
+  //get total entries in  the db accross all stores
+  async totalEntries() {
+    const db = await this.dbPromise;
+    let count = 0;
+    for (const storeName of db.objectStoreNames) {
+      const tx = db.transaction(storeName, "readwrite");
+      count += await tx.store.count();
+    }
+    return count;
+  }
+
+  async hasUserModified() {
+    await this.dbPromise;
+    let expectedEntries = await this.settings.get("count");
+    //console.log("expected entries", expectedEntries);
+    if (!expectedEntries) return true;
+    if ((await this.totalEntries()) !== expectedEntries.value) {
+      //delete count permerantly
+      await this.settings.remove("count");
+      return true;
+    }
+    return false;
+  }
+
+  async updateCount() {
+    await this.dbPromise;
+    console.log("updating count");
+    this.settings.set("count", await this.totalEntries());
   }
 
   async query(
@@ -159,27 +178,36 @@ export class TopLink_Queries {
   }
 
   async add(website: string) {
-    return this.db.query(["toplinks"], async (stores) => {
+    if (await this.db.hasUserModified()) return undefined;
+    const result = await this.db.query(["toplinks"], async (stores) => {
       return stores.toplinks.add({
         website,
         created: new Date(),
         sublinks: [],
       });
     });
+    await this.db.updateCount();
+    return result;
   }
 
   async remove(website: string) {
-    return this.db.query(["sublinks", "toplinks"], async (stores) => {
-      //delete all sublinksunder it first
-      const tld = (await stores.toplinks.get(website)) as TopLink | undefined;
-      if (!tld) throw new Error(`TLD with website ${website} not found`);
-      await Promise.all(
-        tld.sublinks.map((sublink) =>
-          stores.sublinks.delete(`${website}_${sublink}`)
-        )
-      );
-      return stores.toplinks.delete(website);
-    });
+    if (await this.db.hasUserModified()) return undefined;
+    const result = await this.db.query(
+      ["sublinks", "toplinks"],
+      async (stores) => {
+        //delete all sublinks under it first
+        const tld = (await stores.toplinks.get(website)) as TopLink | undefined;
+        if (!tld) throw new Error(`TLD with website ${website} not found`);
+        await Promise.all(
+          tld.sublinks.map((sublink) =>
+            stores.sublinks.delete(`${website}_${sublink}`)
+          )
+        );
+        return stores.toplinks.delete(website);
+      }
+    );
+    await this.db.updateCount();
+    return result;
   }
 
   async get(website: string) {
@@ -213,29 +241,41 @@ export class Sublink_Queries {
 
   // Add or update sublink entry in the sublink store and remember to add sublink URL to the TLD sublinks array
   async add(tld: TopLink, url: string) {
-    return this.db.query(["sublinks", "toplinks"], async (stores) => {
-      const created = new Date();
-      const composite = `${tld.website}_${url}`;
-      tld.sublinks.push(url);
-      await stores.toplinks.put(tld);
-      return stores.sublinks.add({
-        url,
-        composite,
-        created,
-        logging: false,
-        endpoints: [],
-      });
-    });
+    if (await this.db.hasUserModified()) return undefined;
+    const result = await this.db.query(
+      ["sublinks", "toplinks"],
+      async (stores) => {
+        const created = new Date();
+        const composite = `${tld.website}_${url}`;
+        tld.sublinks.push(url);
+        await stores.toplinks.put(tld);
+        return stores.sublinks.add({
+          url,
+          composite,
+          created,
+          logging: false,
+          endpoints: [],
+        });
+      }
+    );
+    await this.db.updateCount();
+    return result;
   }
 
   // remove a sublink from the sublink store and remember to remove the sublink URL from the TLD sublinks array
   async remove(tld: TopLink, url: string) {
-    return this.db.query(["sublinks", "toplinks"], async (stores) => {
-      const composite = `${tld.website}_${url}`;
-      tld.sublinks = tld.sublinks.filter((sublink) => sublink !== url);
-      await stores.toplinks.put(tld);
-      return stores.sublinks.delete(composite);
-    });
+    if (await this.db.hasUserModified()) return undefined;
+    const result = await this.db.query(
+      ["sublinks", "toplinks"],
+      async (stores) => {
+        const composite = `${tld.website}_${url}`;
+        tld.sublinks = tld.sublinks.filter((sublink) => sublink !== url);
+        await stores.toplinks.put(tld);
+        return stores.sublinks.delete(composite);
+      }
+    );
+    await this.db.updateCount();
+    return result;
   }
 
   //assoisate a endpoint
@@ -273,18 +313,24 @@ export class EndPoint_Queries {
   }
 
   async add(eName: string) {
-    return this.db.query(["endpoints"], async (stores) => {
+    if (await this.db.hasUserModified()) return undefined;
+    const result = await this.db.query(["endpoints"], async (stores) => {
       return stores.endpoints.add({
         name: eName,
         created: new Date(),
       });
     });
+    await this.db.updateCount();
+    return result;
   }
 
   async remove(name: string) {
-    return this.db.query(["endpoints"], async (stores) => {
-      return stores.endpoints.delete(name);
+    if (await this.db.hasUserModified()) return undefined;
+    const result = await this.db.query(["endpoints"], async (stores) => {
+      await stores.endpoints.delete(name);
     });
+    await this.db.updateCount();
+    return result;
   }
 
   async getAll() {
@@ -313,12 +359,22 @@ export class Settings_Queries {
     }) as Promise<Settings>;
   }
 
-  async set(name: string, value: string) {
-    return this.db.query(["settings"], async (stores) => {
+  async set(name: string, value: string | number) {
+    const result = await this.db.query(["settings"], async (stores) => {
       return stores.settings.put({
         name,
         value,
       });
     });
+    if (name !== "count") await this.db.updateCount();
+    return result;
+  }
+
+  async remove(name: string) {
+    const result = await this.db.query(["settings"], async (stores) => {
+      return stores.settings.delete(name);
+    });
+    if (name !== "count") await this.db.updateCount();
+    return result;
   }
 }
