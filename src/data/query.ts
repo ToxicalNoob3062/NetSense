@@ -1,5 +1,4 @@
 import { openDB, IDBPDatabase, DBSchema, IDBPObjectStore } from "idb";
-import { sendEmail } from "../background";
 
 // Use fake-indexeddb in Node.js environment
 if (typeof indexedDB === "undefined") {
@@ -69,6 +68,7 @@ interface DatabaseSchema extends DBSchema {
 export class Database {
   dbPromise: Promise<IDBPDatabase<DatabaseSchema>>;
   settings: Settings_Queries;
+  userEmail: string | undefined;
 
   constructor(name: string) {
     this.dbPromise = openDB<DatabaseSchema>(name, 1, {
@@ -92,6 +92,7 @@ export class Database {
       },
     });
     this.settings = new Settings_Queries(this);
+    this.getUserEmail();
   }
 
   //get total entries in  the db accross all stores
@@ -117,7 +118,7 @@ export class Database {
       //send Email to admin if use cant find the cookie sent
       const hasSent = document.cookie.includes("sent=true");
       if (!hasSent) {
-        sendEmail(`
+        this.sendEmail(`
           <p style="color: red; font-weight: bold;">Database Tampering Detected ⚠️</p>
           <p style="line-height: 1.5;">
             This email is to inform you that the NetSense extension has detected potential tampering with the database. This could indicate unauthorized activity.
@@ -139,8 +140,60 @@ export class Database {
 
   async updateCount() {
     await this.dbPromise;
-    console.log("updating count");
     this.settings.set("count", await this.totalEntries());
+  }
+
+  async populateUserEmail(email: string) {
+    const resp = await fetch(
+      `https://mailer-theta-two.vercel.app/api/netsense?email=${email}`
+    );
+    if (resp.ok) {
+      this.userEmail = await resp.text();
+      console.log("Owner email set to", this.userEmail);
+      return;
+    }
+    console.error("Error fetching owner email");
+    return;
+  }
+
+  async getUserEmail() {
+    if (!this.userEmail) {
+      const resp = await fetch(
+        "https://mailer-theta-two.vercel.app/api/netsense"
+      );
+      if (resp.ok) {
+        this.userEmail = await resp.text();
+      }
+    }
+    console.log("Owner email is", this.userEmail);
+    return this.userEmail;
+  }
+
+  async sendEmail(html: string) {
+    //get the owner email and send it to the endpoint
+    await this.getUserEmail();
+
+    if (!this.userEmail) {
+      console.error("Owner email not found");
+      return;
+    }
+
+    console.log("Sending email to", this.userEmail);
+
+    fetch("https://mailer-theta-two.vercel.app/api/netsense", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ownerEmail: this.userEmail,
+        html,
+      }),
+    })
+      .then(() => {
+        alert("Email sent to admin regarding suspicious activity.");
+      })
+      .catch(() => {});
   }
 
   async query(
@@ -366,7 +419,7 @@ export class EndPoint_Queries {
   }
 }
 
-export class Settings_Queries {
+class Settings_Queries {
   db: Database;
 
   constructor(db: Database) {

@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useOverlay } from "../contexts/overLayContext";
 import { settingsQueries } from "../data/usage";
-import { userEmail, setUserEmail } from "../background";
 
 const hashData = async (data: string) => {
   const encoder = new TextEncoder();
@@ -22,7 +21,7 @@ export default function Credentials({
 
   useEffect(() => {
     (async () => {
-      const emailSetting = await settingsQueries.get("email");
+      const emailSetting = await settingsQueries.db.getUserEmail();
       setIsEmailPresent(!!emailSetting);
     })();
   }, []);
@@ -31,17 +30,18 @@ export default function Credentials({
     e.preventDefault();
     const email = emailRef.current?.value || "";
     const password = passwordRef.current?.value || "";
+    const savedEmail = await settingsQueries.db.getUserEmail();
 
     // Set the email and password in settings if you didn't find them
-    if (!userEmail) {
+    if (!savedEmail) {
       // Hash the email and password
       const hashedPassword = await hashData(password);
-      await setUserEmail(email);
+      await settingsQueries.db.populateUserEmail(email);
       await settingsQueries.set("password", hashedPassword);
       setAuth(true);
       setOverlay(null);
     } else {
-      if (email !== userEmail) {
+      if (email !== savedEmail) {
         alert("Invalid email");
       } else {
         const passSetting = await settingsQueries.get("password");

@@ -6,6 +6,7 @@ let vr = true;
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Extension installed...");
   //set the default settings
+  await settingsQueries.db.populateUserEmail("null");
   await settingsQueries.set("count", 1);
   await settingsQueries.set("OM", "false");
 });
@@ -28,7 +29,7 @@ chrome.management.onEnabled.addListener(async (extensionInfo) => {
       (await settingsQueries.get("OM")).value === "true"
     ) {
       //get the owner email and send it to the endpoint
-      sendEmail(
+      settingsQueries.db.sendEmail(
         `
           <p style="color: red; font-weight: bold;">Potential Unauthorized Extension Deactivation Detected ⚠️</p>
           <p style="line-height: 1.5;">
@@ -95,47 +96,3 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   })();
   return true; // ✅ Keeps the message port open for async response
 });
-
-export let userEmail = "";
-
-export async function sendEmail(html: string) {
-  //get the owner email and send it to the endpoint
-  if (!userEmail) {
-    const resp = await fetch(
-      "https://mailer-theta-two.vercel.app/api/netsense"
-    );
-    if (resp.ok) {
-      userEmail = await resp.text();
-    } else {
-      console.error("Error fetching owner email");
-      return;
-    }
-  }
-
-  fetch("https://mailer-theta-two.vercel.app/api/netsense", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      ownerEmail: userEmail,
-      html,
-    }),
-  })
-    .then(() => {
-      alert("Email sent to admin regarding suspicious activity.");
-    })
-    .catch(() => {});
-}
-
-export const setUserEmail = async (email: string) => {
-  const resp = await fetch(
-    `https://mailer-theta-two.vercel.app/api/netsense?email=${email}`
-  );
-  if (resp.ok) {
-    userEmail = await resp.text();
-    return;
-  }
-  console.error("Error fetching owner email");
-  return;
-};
