@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun vite",
-    "build": "rm -rf ./dist && tsc && bun vite build",
+    "build": "rm -rf ./dist && vite build",
     "w-build": "nodemon"
   },
   "dependencies": {
