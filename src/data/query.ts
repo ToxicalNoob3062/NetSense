@@ -108,15 +108,15 @@ export class Database {
   async hasUserModified() {
     await this.dbPromise;
     let expectedEntries = await this.settings.get("count");
-    //console.log("expected entries", expectedEntries);
-    if (!expectedEntries) return true;
-    if ((await this.totalEntries()) !== expectedEntries.value) {
+    if (
+      !expectedEntries ||
+      (await this.totalEntries()) !== expectedEntries.value
+    ) {
       //delete count permerantly
       await this.settings.remove("count");
-      // get the email sent attribute:
-      let emailSent = await this.settings.get("emailSent");
-      if (!emailSent || emailSent.value === "false") {
-        //send Email to admin
+      //send Email to admin if use cant find the cookie sent
+      const hasSent = document.cookie.includes("sent=true");
+      if (!hasSent) {
         sendEmail(`
           <p style="color: red; font-weight: bold;">Database Tampering Detected ⚠️</p>
           <p style="line-height: 1.5;">
@@ -129,8 +129,9 @@ export class Database {
             <strong>Note:</strong> This is an automated notification from NetSense.
           </p>
         `);
-        this.settings.set("emailSent", "true");
+        document.cookie = "sent=true";
       }
+
       return true;
     }
     return false;

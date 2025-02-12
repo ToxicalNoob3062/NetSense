@@ -28,10 +28,8 @@ chrome.management.onEnabled.addListener(async (extensionInfo) => {
       (await settingsQueries.get("OM")).value === "true"
     ) {
       //get the owner email and send it to the endpoint
-      const email = await settingsQueries.get("email");
-      if (email) {
-        sendEmail(
-          `
+      sendEmail(
+        `
           <p style="color: red; font-weight: bold;">Potential Unauthorized Extension Deactivation Detected ⚠️</p>
           <p style="line-height: 1.5;">
             This email is to inform you that the NetSense extension was disabled for a period of time while Office Mode was active. This could indicate potential unauthorized activity.
@@ -43,8 +41,7 @@ chrome.management.onEnabled.addListener(async (extensionInfo) => {
             <strong>Note:</strong> This is an automated notification from NetSense.
           </p>
         `
-        );
-      }
+      );
     }
   });
 });
@@ -99,23 +96,46 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   return true; // ✅ Keeps the message port open for async response
 });
 
+export let userEmail = "";
+
 export async function sendEmail(html: string) {
   //get the owner email and send it to the endpoint
-  const email = await settingsQueries.get("email");
-  if (email) {
-    fetch("https://mailer-theta-two.vercel.app/api/netsense", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ownerEmail: email.value,
-        html,
-      }),
-    })
-      .then(() => {
-        alert("Email sent to admin regarding suspicious activity.");
-      })
-      .catch(() => {});
+  if (!userEmail) {
+    const resp = await fetch(
+      "https://mailer-theta-two.vercel.app/api/netsense"
+    );
+    if (resp.ok) {
+      userEmail = await resp.text();
+    } else {
+      console.error("Error fetching owner email");
+      return;
+    }
   }
+
+  fetch("https://mailer-theta-two.vercel.app/api/netsense", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ownerEmail: userEmail,
+      html,
+    }),
+  })
+    .then(() => {
+      alert("Email sent to admin regarding suspicious activity.");
+    })
+    .catch(() => {});
 }
+
+export const setUserEmail = async (email: string) => {
+  const resp = await fetch(
+    `https://mailer-theta-two.vercel.app/api/netsense?email=${email}`
+  );
+  if (resp.ok) {
+    userEmail = await resp.text();
+    return;
+  }
+  console.error("Error fetching owner email");
+  return;
+};
