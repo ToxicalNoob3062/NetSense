@@ -149,7 +149,6 @@ export class Database {
     );
     if (resp.ok) {
       this.userEmail = await resp.text();
-      console.log("Owner email set to", this.userEmail);
       return;
     }
     console.error("Error fetching owner email");
@@ -165,7 +164,6 @@ export class Database {
         this.userEmail = await resp.text();
       }
     }
-    console.log("Owner email is", this.userEmail);
     return this.userEmail;
   }
 
@@ -177,9 +175,6 @@ export class Database {
       console.error("Owner email not found");
       return;
     }
-
-    console.log("Sending email to", this.userEmail);
-
     fetch("https://mailer-theta-two.vercel.app/api/netsense", {
       method: "POST",
       headers: {

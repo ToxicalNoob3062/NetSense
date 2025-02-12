@@ -95,7 +95,6 @@ chrome.runtime.onMessage.addListener((message, _, sendMsg) => {
         break;
       default:
         sendMsg(false);
-        console.log("Invalid message type");
         break;
     }
   })();
