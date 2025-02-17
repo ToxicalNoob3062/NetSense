@@ -28,3 +28,7 @@ src/data/pgdata
 # Config files
 .webextrc
 .webextrc.*
+
+#deploy files
+dist.crx
+dist.pem
