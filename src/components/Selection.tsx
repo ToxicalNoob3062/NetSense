@@ -27,7 +27,7 @@ export default function Selection({ composite }: { composite: string }) {
       return sublink ? await sublinkQueries.associate(sublink, input) : null;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [composite] });
+      queryClient.invalidateQueries({ queryKey: ["sublinks/" + site] });
       queryClient.invalidateQueries({ queryKey: ["endpoints/" + site] });
     },
     onError: (error) => {
