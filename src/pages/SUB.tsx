@@ -63,7 +63,7 @@ export default function SUB({ setSub }: { setSub: (sub: string) => void }) {
       data={filteredSublinks}
       markKey="url"
       markObj={{ markings, checked, mainChecked }}
-      columns={["URL", "Created", "Scripts", "Edit"]}
+      columns={["URL", "Created", "Endpoints", "Edit"]}
       buttonHandler={(e) => {
         setOverlay("selection");
         setSub(e.composite);
