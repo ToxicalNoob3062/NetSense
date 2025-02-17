@@ -32,3 +32,4 @@ src/data/pgdata
 #deploy files
 dist.crx
 dist.pem
+dist.zip
